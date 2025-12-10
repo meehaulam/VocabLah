@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VocabLah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              background: '#F5F7FB',
+              primary: '#5B7FFF',
+              'primary-hover': '#4A6EEE',
+              dark: '#1A1A2E',
+              accent: '#FF9F66',
+              'accent-hover': '#FF8F4D',
+              
+              // Dark Mode Colors
+              'dark-bg': '#1A1A2E',
+              'dark-surface': '#2D2D44',
+              'dark-text': '#F8FAFC',
+              'dark-text-sec': '#A0AEC0',
+              'dark-border': '#3D3D5C',
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            }
+          },
+        },
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      
+      /* Custom Scrollbar Styling */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #CBD5E1;
+        border-radius: 3px;
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #3D3D5C;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94A3B8;
+      }
+      /* Firefox */
+      .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #CBD5E1 transparent;
+      }
+      .dark .custom-scrollbar {
+        scrollbar-color: #3D3D5C transparent;
+      }
+
+      /* Checkmark Animation */
+      @keyframes check-bounce {
+        0% { opacity: 0; transform: scale(0) translateY(20px); }
+        50% { opacity: 1; transform: scale(1.2) translateY(0); }
+        70% { transform: scale(0.9) translateY(0); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      
+      .animate-check-bounce {
+        animation: check-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      /* Circular Progress Animation */
+      .circular-chart {
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        max-height: 250px;
+      }
+      .circle-bg {
+        fill: none;
+        stroke: #eee;
+        stroke-width: 2.5;
+      }
+      .dark .circle-bg {
+        stroke: #2D2D44;
+      }
+      .circle {
+        fill: none;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        animation: progress 1s ease-out forwards;
+      }
+      @keyframes progress {
+        0% { stroke-dasharray: 0 100; }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.556.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
