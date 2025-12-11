@@ -168,7 +168,7 @@ export const WordBank: React.FC<WordBankProps> = ({
       </div>
       
       {/* 4. Scrollable List */}
-      <div className="flex-1 overflow-y-auto -mx-2 px-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto -mx-2 px-2 custom-scrollbar pb-32 md:pb-48">
         {filteredAndSortedWords.length === 0 ? (
            <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 dark:text-dark-text-sec">
               {searchQuery ? (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlusCircle, X, ChevronDown } from 'lucide-react';
+import { PlusCircle, X } from 'lucide-react';
 import { Collection } from '../types';
 
 interface AddWordModalProps {
@@ -119,27 +119,22 @@ export const AddWordModal: React.FC<AddWordModalProps> = ({
             <label htmlFor="collection" className="block text-sm font-semibold text-gray-700 dark:text-dark-text-sec">
               Collection <span className="text-gray-400 font-normal text-xs">(Optional)</span>
             </label>
-            <div className="relative">
-              <select
-                id="collection"
-                value={collectionId}
-                onChange={handleCollectionChange}
-                className="w-full px-4 py-3 pr-10 rounded-lg bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border focus:bg-white dark:focus:bg-dark-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-dark dark:text-dark-text appearance-none cursor-pointer"
-              >
-                <option value="">None (All Words)</option>
-                <option disabled>──────────</option>
-                {userCollections.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
-                  </option>
-                ))}
-                <option disabled>──────────</option>
-                <option value="__CREATE_NEW__" className="font-bold text-primary">+ Create New Collection</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500 dark:text-gray-400">
-                <ChevronDown className="w-5 h-5" />
-              </div>
-            </div>
+            <select
+              id="collection"
+              value={collectionId}
+              onChange={handleCollectionChange}
+              className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border focus:bg-white dark:focus:bg-dark-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-dark dark:text-dark-text cursor-pointer custom-select"
+            >
+              <option value="">None (All Words)</option>
+              <option disabled>──────────</option>
+              {userCollections.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.icon} {c.name}
+                </option>
+              ))}
+              <option disabled>──────────</option>
+              <option value="__CREATE_NEW__" className="font-bold text-primary">+ Create New Collection</option>
+            </select>
           </div>
 
           {error && (

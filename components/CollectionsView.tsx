@@ -69,7 +69,7 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
       </div>
 
       {/* Collections List */}
-      <div className="flex-1 overflow-y-auto pb-4 custom-scrollbar -mx-2 px-2 space-y-6">
+      <div className="flex-1 overflow-y-auto pb-32 md:pb-48 custom-scrollbar -mx-2 px-2 space-y-6">
         
         {/* All Words Card */}
         {allWordsCollection && (

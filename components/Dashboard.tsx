@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VocabWord } from '../types';
-import { PlusCircle, BookOpen, CheckCircle2, TrendingUp, CalendarClock, AlertTriangle, X, Calendar } from 'lucide-react';
+import { PlusCircle, BookOpen, CheckCircle2, CalendarClock, AlertTriangle, X, Calendar } from 'lucide-react';
 import { isCardDue } from '../utils/srs';
 import { getTodayDate, addDays } from '../utils/date';
 import { Tooltip } from './Tooltip';
@@ -49,9 +49,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   
   const dueTomorrow = words.filter(w => w.nextReviewDate === tomorrow).length;
   const dueThisWeek = words.filter(w => w.nextReviewDate > today && w.nextReviewDate <= weekEnd).length;
-
-  // Recent words (last 3 added)
-  const recentWords = [...words].sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
 
   const isUrgent = dueCount > 15;
 
@@ -269,7 +266,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* 3. Forecast Section (New) */}
       {(dueTomorrow > 0 || dueThisWeek > 0) && dueCount === 0 && (
-        <div className="bg-gray-50 dark:bg-dark-surface rounded-xl p-4 border border-gray-100 dark:border-dark-border animate-in slide-in-from-bottom-2">
+        <div className="upcoming-section bg-gray-50 dark:bg-dark-surface rounded-xl p-4 border border-gray-100 dark:border-dark-border animate-in slide-in-from-bottom-2 mb-16">
            <div className="flex items-center gap-2 mb-3 text-sm font-bold text-gray-700 dark:text-dark-text uppercase tracking-wide">
               <CalendarClock className="w-4 h-4 text-primary" />
               <span>Upcoming</span>
@@ -284,37 +281,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  <span className="text-xs text-gray-500 dark:text-dark-text-sec">Due This Week</span>
               </div>
            </div>
-        </div>
-      )}
-
-      {/* 4. Recent Activity */}
-      {recentWords.length > 0 && (
-        <div className="space-y-3 pb-2">
-          <h3 className="text-xs font-semibold text-gray-400 dark:text-dark-text-sec uppercase tracking-wider pl-1 flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5" />
-            Recently Added
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {recentWords.map(word => {
-              const isDue = isCardDue(word);
-              return (
-                <button
-                  key={word.id}
-                  onClick={() => onGoToWordBank()}
-                  className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all shadow-sm border ${
-                    isDue 
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/50 text-orange-700 dark:text-orange-300' 
-                    : 'bg-white dark:bg-dark-surface border-gray-100 dark:border-dark-border text-gray-600 dark:text-dark-text hover:border-primary/50'
-                  }`}
-                >
-                  <span>{word.word}</span>
-                  {isDue && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
         </div>
       )}
     </div>

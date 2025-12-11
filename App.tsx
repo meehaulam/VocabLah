@@ -8,7 +8,7 @@ import { CollectionsView } from './components/CollectionsView';
 import { CollectionDetailView } from './components/CollectionDetailView';
 import { ReviewMode } from './components/ReviewMode';
 import { AddWordModal } from './components/AddWordModal';
-import { SettingsView, ThemeOption, SessionLimitOption } from './components/SettingsView';
+import { SettingsView, SessionLimitOption } from './components/SettingsView';
 import { CreateCollectionModal } from './components/CreateCollectionModal';
 import { EditCollectionModal } from './components/EditCollectionModal';
 import { DeleteCollectionModal } from './components/DeleteCollectionModal';
@@ -18,21 +18,19 @@ import { getTodayDate, addDays } from './utils/date';
 
 const LOCAL_STORAGE_KEY = "vocab_lah_words";
 const COLLECTIONS_STORAGE_KEY = "vocab_lah_collections";
-const THEME_STORAGE_KEY = "vocab_lah_theme";
 const SESSION_LIMIT_KEY = "vocab_lah_session_limit";
 const TUTORIAL_COMPLETED_KEY = "vocab_lah_tutorial_completed";
+const THEME_STORAGE_KEY = "vocab_lah_theme";
 
 const App: React.FC = () => {
   const [words, setWords] = useState<VocabWord[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [currentView, setCurrentView] = useState<View>('dashboard');
-  const [previousView, setPreviousView] = useState<View>('dashboard'); // For back navigation
-  const [isDarkMode, setIsDarkMode] = useState(false); // Kept for styling reference if needed elsewhere
   
   // Settings State
-  const [themeMode, setThemeMode] = useState<ThemeOption>('auto');
   const [sessionLimit, setSessionLimit] = useState<SessionLimitOption>(20);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   
   // State for deep linking / navigation parameters
   const [wordBankFilter, setWordBankFilter] = useState<'all' | 'learning' | 'mastered'>('all');
@@ -180,44 +178,28 @@ const App: React.FC = () => {
 
   // Load Settings from LocalStorage
   useEffect(() => {
-    // Theme
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeOption | null;
-    if (storedTheme) {
-      setThemeMode(storedTheme);
-    }
-
     // Session Limit
     const storedLimit = localStorage.getItem(SESSION_LIMIT_KEY);
     if (storedLimit) {
         setSessionLimit(storedLimit === 'all' ? 'all' : parseInt(storedLimit) as SessionLimitOption);
     }
-  }, []);
-
-  // Theme Logic Effect
-  useEffect(() => {
-    const applyTheme = () => {
-      const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const shouldBeDark = themeMode === 'dark' || (themeMode === 'auto' && isSystemDark);
-      
-      setIsDarkMode(shouldBeDark);
-      if (shouldBeDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    };
-
-    applyTheme();
-
-    // Listener for system changes if auto
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handler = () => {
-        if (themeMode === 'auto') applyTheme();
-    };
     
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, [themeMode]);
+    // Theme
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === 'dark') {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    } else if (storedTheme === 'light') {
+      setIsDarkMode(false);
+      document.documentElement.classList.remove('dark');
+    } else {
+      // System preference
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setIsDarkMode(true);
+        document.documentElement.classList.add('dark');
+      }
+    }
+  }, []);
 
   // Save words to LocalStorage whenever words change
   useEffect(() => {
@@ -228,9 +210,16 @@ const App: React.FC = () => {
 
   // --- Handlers ---
 
-  const handleThemeChange = (newTheme: ThemeOption) => {
-    setThemeMode(newTheme);
-    localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem(THEME_STORAGE_KEY, 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem(THEME_STORAGE_KEY, 'light');
+    }
   };
 
   const handleSessionLimitChange = (newLimit: SessionLimitOption) => {
@@ -238,20 +227,8 @@ const App: React.FC = () => {
     localStorage.setItem(SESSION_LIMIT_KEY, newLimit.toString());
   };
 
-  const handleOpenSettings = () => {
-    if (currentView !== 'settings') {
-      setPreviousView(currentView);
-      setCurrentView('settings');
-    }
-  };
-
-  const handleBackFromSettings = () => {
-    setCurrentView(previousView);
-  };
-
   const handleResetData = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
-    localStorage.removeItem(THEME_STORAGE_KEY);
     localStorage.removeItem(SESSION_LIMIT_KEY);
     localStorage.removeItem(COLLECTIONS_STORAGE_KEY);
     localStorage.removeItem(TUTORIAL_COMPLETED_KEY);
@@ -270,20 +247,9 @@ const App: React.FC = () => {
     };
     setCollections([defaultCollection]);
     
-    setThemeMode('auto');
     setSessionLimit(20);
     setCurrentView('dashboard');
-    setPreviousView('dashboard');
     
-    // Reset theme to auto visually immediately
-    const isSystemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDarkMode(isSystemDark);
-    if (isSystemDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
     // Show tutorial again after reset
     setTimeout(() => setShowTutorial(true), 800);
   };
@@ -424,7 +390,7 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'dashboard':
         return (
-          <div className="h-full overflow-y-auto custom-scrollbar">
+          <div className="h-full overflow-y-auto custom-scrollbar pb-32 md:pb-48">
             <Dashboard 
               words={words} 
               onStartReview={() => handleStartReview(null)}
@@ -484,31 +450,34 @@ const App: React.FC = () => {
         );
       case 'review':
         return (
-          <ReviewMode 
-            words={words}
-            collections={collections}
-            sessionLimit={sessionLimit}
-            initialCollectionId={reviewTargetCollectionId}
-            onUpdateWord={handleUpdateWord}
-            onBackToDashboard={() => {
-              setCurrentView('dashboard');
-              setReviewTargetCollectionId(null);
-            }}
-          />
+          <div className="h-full w-full bg-gray-50 dark:bg-dark-bg">
+            <ReviewMode 
+              words={words}
+              collections={collections}
+              sessionLimit={sessionLimit}
+              initialCollectionId={reviewTargetCollectionId}
+              onUpdateWord={handleUpdateWord}
+              onBackToDashboard={() => {
+                setCurrentView('dashboard');
+                setReviewTargetCollectionId(null);
+              }}
+            />
+          </div>
         );
       case 'settings':
         return (
-          <SettingsView 
-             theme={themeMode}
-             setTheme={handleThemeChange}
-             sessionLimit={sessionLimit}
-             setSessionLimit={handleSessionLimitChange}
-             onBack={handleBackFromSettings}
-             onResetData={handleResetData}
-             words={words}
-             onResetSRSData={handleResetSRSData}
-             onReplayTutorial={handleReplayTutorial}
-          />
+          <div className="h-full overflow-y-auto custom-scrollbar pb-32 md:pb-48 px-1">
+            <SettingsView 
+               sessionLimit={sessionLimit}
+               setSessionLimit={handleSessionLimitChange}
+               onResetData={handleResetData}
+               words={words}
+               onResetSRSData={handleResetSRSData}
+               onReplayTutorial={handleReplayTutorial}
+               isDarkMode={isDarkMode}
+               toggleTheme={toggleDarkMode}
+            />
+          </div>
         );
       default:
         return null;
@@ -516,22 +485,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-background dark:bg-dark-bg text-dark dark:text-dark-text flex flex-col overflow-hidden transition-colors duration-300">
+    <div className="h-screen bg-transparent text-dark dark:text-dark-text flex flex-col overflow-hidden">
       
       {/* Show Global Header unless in Settings or Collection Detail (which has its own header) */}
       {currentView !== 'settings' && currentView !== 'collection-detail' && (
-        <Header onOpenSettings={handleOpenSettings} />
+        <Header />
       )}
       
-      {/* Main Content Area - padded at bottom for nav if visible */}
-      <main className={`flex-1 w-full max-w-2xl mx-auto ${currentView !== 'settings' && currentView !== 'collection-detail' ? 'p-4 sm:p-6 pb-20' : ''} overflow-hidden relative`}>
+      {/* Main Content Area */}
+      <main className={`flex-1 w-full max-w-2xl mx-auto ${currentView !== 'collection-detail' && currentView !== 'review' ? 'px-4 sm:px-6 pt-4 sm:pt-6' : ''} overflow-hidden relative`}>
         <div className="h-full w-full">
           {renderContent()}
         </div>
       </main>
 
-      {/* Show Bottom Nav unless in Settings or Collection Detail */}
-      {currentView !== 'settings' && currentView !== 'collection-detail' && (
+      {/* Show Bottom Nav unless in Collection Detail */}
+      {currentView !== 'collection-detail' && (
         <BottomNav currentView={currentView} onViewChange={setCurrentView} />
       )}
 
@@ -546,31 +515,31 @@ const App: React.FC = () => {
           initialCollectionId={addModalInitialCollectionId}
         />
       )}
-
-      {/* Create Collection Modal */}
-      <CreateCollectionModal
+      
+      {/* Global Create Collection Modal */}
+      <CreateCollectionModal 
         isOpen={isCreateCollectionModalOpen}
         onClose={() => setIsCreateCollectionModalOpen(false)}
         onCreate={handleCreateCollection}
         existingCollections={collections}
       />
-
+      
       {/* Edit Collection Modal */}
       <EditCollectionModal 
         isOpen={!!editingCollection}
-        collection={editingCollection}
         onClose={() => setEditingCollection(null)}
         onSave={handleUpdateCollection}
+        collection={editingCollection}
         existingCollections={collections}
       />
 
       {/* Delete Collection Modal */}
-      <DeleteCollectionModal 
+      <DeleteCollectionModal
         isOpen={!!deletingCollection}
-        collection={deletingCollection}
-        wordCount={deletingCollection ? words.filter(w => w.collectionId === deletingCollection.id).length : 0}
         onClose={() => setDeletingCollection(null)}
         onDelete={handleDeleteCollection}
+        collection={deletingCollection}
+        wordCount={deletingCollection ? words.filter(w => w.collectionId === deletingCollection.id).length : 0}
       />
 
       {/* Tutorial Overlay */}
@@ -579,6 +548,7 @@ const App: React.FC = () => {
         onComplete={handleTutorialComplete}
         onClose={() => setShowTutorial(false)}
       />
+
     </div>
   );
 };

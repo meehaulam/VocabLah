@@ -11,19 +11,21 @@
         theme: {
           extend: {
             colors: {
-              background: '#F5F7FB',
-              primary: '#5B7FFF',
-              'primary-hover': '#4A6EEE',
-              dark: '#1A1A2E',
-              accent: '#FF9F66',
-              'accent-hover': '#FF8F4D',
+              primary: '#A855F7',       /* Purple 500 */
+              'primary-hover': '#9333EA', /* Purple 600 */
+              'primary-light': '#C084FC', /* Purple 400 */
               
-              // Dark Mode Colors
-              'dark-bg': '#1A1A2E',
-              'dark-surface': '#2D2D44',
-              'dark-text': '#F8FAFC',
-              'dark-text-sec': '#A0AEC0',
-              'dark-border': '#3D3D5C',
+              background: '#FAF5FF',    /* Purple 50 */
+              
+              /* Dark Mode Palette */
+              dark: '#1E1B29',          /* Deep Purple BG */
+              'dark-surface': '#2D2438',/* Dark Purple Card */
+              'dark-border': '#4A3B5C', /* Purple Border */
+              'dark-bg': '#1E1B29',
+              'dark-text': '#F9FAFB',
+              'dark-text-sec': '#D1D5DB',
+              
+              accent: '#C084FC',
             },
             fontFamily: {
               sans: ['Inter', 'sans-serif'],
@@ -37,8 +39,39 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --bg-main: #FAF5FF;
+        --border-purple: #E9D5FF;
+      }
+      
+      html.dark {
+        --bg-main: #1E1B29;
+        --border-purple: #4A3B5C;
+      }
+
       body {
         font-family: 'Inter', sans-serif;
+        min-height: 100vh;
+        padding-bottom: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        /* Light Mode Gradient */
+        background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 50%, #E9D5FF 100%);
+        background-attachment: fixed;
+        color: #1F2937;
+        transition: background 0.5s ease, color 0.3s ease;
+      }
+
+      /* Dark Mode Gradient */
+      html.dark body {
+        background: linear-gradient(135deg, #1E1B29 0%, #2D2438 50%, #3A2D4A 100%);
+        color: #F9FAFB;
+      }
+      
+      /* Safe Area for Bottom Nav */
+      .safe-area-bottom {
+        padding-bottom: env(safe-area-inset-bottom);
+        padding-bottom: constant(safe-area-inset-bottom); /* iOS 11.0 */
       }
       
       /* Custom Scrollbar Styling */
@@ -53,64 +86,24 @@
         background: #CBD5E1;
         border-radius: 3px;
       }
-      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #3D3D5C;
-      }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: #94A3B8;
       }
-      /* Firefox */
-      .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: #CBD5E1 transparent;
+      /* Dark mode scrollbar */
+      html.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #4A3B5C;
       }
-      .dark .custom-scrollbar {
-        scrollbar-color: #3D3D5C transparent;
-      }
-
-      /* Checkmark Animation */
-      @keyframes check-bounce {
-        0% { opacity: 0; transform: scale(0) translateY(20px); }
-        50% { opacity: 1; transform: scale(1.2) translateY(0); }
-        70% { transform: scale(0.9) translateY(0); }
-        100% { opacity: 1; transform: scale(1) translateY(0); }
-      }
-      
-      .animate-check-bounce {
-        animation: check-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      html.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #6B21A8;
       }
 
-      /* Circular Progress Animation */
-      .circular-chart {
-        display: block;
-        margin: 0 auto;
-        max-width: 100%;
-        max-height: 250px;
-      }
-      .circle-bg {
-        fill: none;
-        stroke: #eee;
-        stroke-width: 2.5;
-      }
-      .dark .circle-bg {
-        stroke: #2D2D44;
-      }
-      .circle {
-        fill: none;
-        stroke-width: 2.5;
-        stroke-linecap: round;
-        animation: progress 1s ease-out forwards;
-      }
-      @keyframes progress {
-        0% { stroke-dasharray: 0 100; }
-      }
-
-      /* Flashcard Flip Styles (Main App) */
+      /* Flashcard Flip Styles */
       .flashcard {
         perspective: 1000px;
         cursor: pointer;
         width: 100%;
         min-height: 340px;
+        max-height: 50vh;
       }
 
       .flashcard-inner {
@@ -132,7 +125,7 @@
         position: absolute;
         width: 100%;
         height: 100%;
-        -webkit-backface-visibility: hidden; /* Safari */
+        -webkit-backface-visibility: hidden;
         backface-visibility: hidden;
         display: flex;
         flex-direction: column;
@@ -140,19 +133,71 @@
         align-items: center;
         padding: 2rem;
         border-radius: 1.5rem;
-        background-color: white;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        border: 1px solid #F3F4F6;
-      }
-
-      .dark .flashcard-front,
-      .dark .flashcard-back {
-        background-color: #2D2D44;
-        border-color: #3D3D5C;
+        /* Purple Gradient Card Style */
+        background: linear-gradient(135deg, #A855F7 0%, #9333EA 50%, #7C3AED 100%);
+        color: white;
+        box-shadow: 0 12px 32px rgba(168, 85, 247, 0.3);
+        border: 1px solid rgba(255,255,255,0.1);
       }
 
       .flashcard-back {
         transform: rotateY(180deg);
+        /* Slightly different gradient for back */
+        background: linear-gradient(135deg, #7C3AED 0%, #6B21A8 100%);
+      }
+
+      /* Review Screen Styles */
+      .difficulty-buttons-container {
+        position: fixed;
+        bottom: 80px; /* Adjust based on BottomNav height */
+        left: 0;
+        right: 0;
+        padding: 12px 16px;
+        background: linear-gradient(to top, var(--bg-main) 90%, transparent);
+        z-index: 40;
+        pointer-events: none;
+      }
+
+      html.dark .difficulty-buttons-container {
+        background: linear-gradient(to top, #1E1B29 90%, transparent);
+      }
+
+      .difficulty-buttons-grid {
+        pointer-events: auto;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      
+      .review-content {
+        padding-bottom: 200px;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      
+      .flashcard-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 50vh;
+      }
+
+      /* Custom Select Styling */
+      select.custom-select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23A855F7' d='M1.41 0L6 4.59 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        background-size: 12px;
+        padding-right: 40px;
+      }
+      
+      html.dark select.custom-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23C084FC' d='M1.41 0L6 4.59 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
       }
 
       /* Tutorial Demo Card Styles */
@@ -161,11 +206,11 @@
       }
 
       .demo-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #A855F7 0%, #7C3AED 100%);
         color: white;
         padding: 40px 20px;
         border-radius: 1rem;
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 8px 24px rgba(168, 85, 247, 0.3);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -209,50 +254,7 @@
       .demo-back {
         transform: rotateY(180deg);
       }
-
-      /* Tutorial Timeline */
-      .simple-timeline {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin: 24px 0;
-        flex-wrap: wrap;
-      }
-
-      .timeline-item {
-        text-align: center;
-        min-width: 60px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-
-      .timeline-day {
-        font-size: 13px;
-        font-weight: bold;
-        color: #3B82F6; /* blue-500 */
-        margin-bottom: 4px;
-      }
-
-      .timeline-action {
-        font-size: 11px;
-        color: #6B7280; /* gray-500 */
-      }
       
-      .dark .timeline-day {
-        color: #60A5FA; /* blue-400 */
-      }
-      
-      .dark .timeline-action {
-        color: #9CA3AF; /* gray-400 */
-      }
-
-      .timeline-arrow {
-        color: #9CA3AF;
-        font-size: 16px;
-      }
-
       /* Tooltip Styles */
       .tooltip-wrapper {
         position: relative;
@@ -266,7 +268,7 @@
         justify-content: center;
         width: 16px;
         height: 16px;
-        background: #3B82F6;
+        background: #A855F7;
         color: white;
         border-radius: 50%;
         font-size: 10px;
@@ -278,7 +280,7 @@
       }
 
       .tooltip-icon:hover {
-        background: #2563EB;
+        background: #9333EA;
         transform: scale(1.1);
       }
 
@@ -289,7 +291,7 @@
         bottom: 125%;
         left: 50%;
         transform: translateX(-50%);
-        background: #1F2937;
+        background: #9333EA;
         color: white;
         padding: 10px 12px;
         border-radius: 8px;
@@ -297,11 +299,12 @@
         width: 200px;
         text-align: left;
         z-index: 1000;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
         transition: opacity 0.3s;
         pointer-events: none;
         font-weight: normal;
         line-height: 1.4;
+        border: 1px solid #A855F7;
       }
 
       .tooltip-text::after {
@@ -311,7 +314,7 @@
         left: 50%;
         transform: translateX(-50%);
         border: 6px solid transparent;
-        border-top-color: #1F2937;
+        border-top-color: #9333EA;
       }
 
       .tooltip-wrapper:hover .tooltip-text,
@@ -320,20 +323,15 @@
         opacity: 1;
       }
 
-      /* Dark mode tooltip support */
-      .dark .tooltip-text {
-        background: #374151;
-      }
-
-      .dark .tooltip-text::after {
-        border-top-color: #374151;
-      }
-
       @media (max-width: 640px) {
         .tooltip-icon {
           width: 18px;
           height: 18px;
           font-size: 11px;
+        }
+        
+        .difficulty-buttons-container {
+           bottom: 70px;
         }
       }
     </style>
