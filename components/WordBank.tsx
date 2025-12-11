@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { VocabWord } from '../types';
+import { VocabWord, Collection } from '../types';
 import { WordList } from './WordList';
 import { EditWordModal } from './EditWordModal';
 import { ArrowUpDown, Search, X, Plus, Filter } from 'lucide-react';
@@ -9,20 +9,26 @@ type FilterOption = 'all' | 'learning' | 'mastered';
 
 interface WordBankProps {
   words: VocabWord[];
+  collections: Collection[];
   initialFilter: FilterOption;
   onAdd: () => void;
-  onEdit: (id: number, word: string, meaning: string) => void;
+  onEdit: (id: number, word: string, meaning: string, collectionId: string | null) => void;
   onDelete: (id: number) => void;
   onToggleMastered: (id: number) => void;
+  onRequestCreateCollection: () => void;
+  lastCreatedCollectionId: string | null;
 }
 
 export const WordBank: React.FC<WordBankProps> = ({ 
   words, 
+  collections,
   initialFilter,
   onAdd, 
   onEdit, 
   onDelete, 
-  onToggleMastered 
+  onToggleMastered,
+  onRequestCreateCollection,
+  lastCreatedCollectionId
 }) => {
   const [filter, setFilter] = useState<FilterOption>(initialFilter);
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -63,8 +69,8 @@ export const WordBank: React.FC<WordBankProps> = ({
     return result.sort((a, b) => b.createdAt - a.createdAt);
   }, [words, filter, sortOption, searchQuery]);
 
-  const handleSaveEdit = (id: number, word: string, meaning: string) => {
-    onEdit(id, word, meaning);
+  const handleSaveEdit = (id: number, word: string, meaning: string, collectionId: string | null) => {
+    onEdit(id, word, meaning, collectionId);
     setEditingWord(null);
   };
 
@@ -196,7 +202,10 @@ export const WordBank: React.FC<WordBankProps> = ({
         <EditWordModal 
           word={editingWord} 
           onSave={handleSaveEdit} 
-          onCancel={() => setEditingWord(null)} 
+          onCancel={() => setEditingWord(null)}
+          collections={collections}
+          onRequestCreateCollection={onRequestCreateCollection}
+          lastCreatedCollectionId={lastCreatedCollectionId}
         />
       )}
     </div>

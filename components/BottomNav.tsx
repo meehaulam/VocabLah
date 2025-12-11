@@ -1,7 +1,7 @@
 import React from 'react';
-import { Home, Book, Layers } from 'lucide-react';
+import { Home, Folder, Layers } from 'lucide-react';
 
-export type View = 'dashboard' | 'wordbank' | 'review' | 'settings';
+export type View = 'dashboard' | 'wordbank' | 'collections' | 'review' | 'settings' | 'collection-detail';
 
 interface BottomNavProps {
   currentView: View;
@@ -23,13 +23,13 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentView, onViewChange 
         </button>
 
         <button
-          onClick={() => onViewChange('wordbank')}
+          onClick={() => onViewChange('collections')}
           className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
-            currentView === 'wordbank' ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300'
+            ['collections', 'wordbank', 'collection-detail'].includes(currentView) ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300'
           }`}
         >
-          <Book className={`w-6 h-6 ${currentView === 'wordbank' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-          <span className="text-[10px] font-medium">Word Bank</span>
+          <Folder className={`w-6 h-6 ${['collections', 'wordbank', 'collection-detail'].includes(currentView) ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+          <span className="text-[10px] font-medium">Collections</span>
         </button>
 
         <button

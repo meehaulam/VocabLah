@@ -1,28 +1,36 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { VocabWord } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import { VocabWord, Collection } from '../types';
 import { SessionLimitOption } from './SettingsView';
-import { ChevronLeft, ChevronRight, CheckCircle2, Award, BookOpen, Check, LayoutDashboard, RotateCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle2, RotateCw, PlayCircle, LayoutDashboard, Check } from 'lucide-react';
 
 interface ReviewModeProps {
   words: VocabWord[];
-  initialFilter: 'all' | 'learning';
+  collections: Collection[];
   sessionLimit: SessionLimitOption;
+  initialCollectionId?: string | null;
   onToggleMastered: (id: number) => void;
   onBackToDashboard: () => void;
 }
 
 export const ReviewMode: React.FC<ReviewModeProps> = ({ 
   words, 
-  initialFilter,
+  collections,
   sessionLimit,
+  initialCollectionId,
   onToggleMastered,
   onBackToDashboard
 }) => {
-  const [filter, setFilter] = useState<'all' | 'learning'>(initialFilter);
+  // Setup State
+  const [isSetupComplete, setIsSetupComplete] = useState(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(initialCollectionId || null); // null represents 'all'
+  const [isPracticeMode, setIsPracticeMode] = useState(false);
+  
+  // Session State
+  const [sessionWords, setSessionWords] = useState<VocabWord[]>([]);
+  const [activeCollectionName, setActiveCollectionName] = useState('All Collections');
   
   // Batch Management
   const [currentBatchIds, setCurrentBatchIds] = useState<number[]>([]);
-  // Store IDs of words completed in previous batches within this session to avoid repeats
   const [completedIds, setCompletedIds] = useState<Set<number>>(new Set());
   
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,71 +38,90 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   const [isBatchComplete, setIsBatchComplete] = useState(false);
   const [batchMasteredCount, setBatchMasteredCount] = useState(0);
 
-  // Sync prop changes
+  // Sync initialCollectionId if it changes (re-mounting or deep link update)
   useEffect(() => {
-    setFilter(initialFilter);
-  }, [initialFilter]);
+    if (initialCollectionId !== undefined) {
+      setSelectedCollectionId(initialCollectionId === 'all' ? null : initialCollectionId);
+    }
+  }, [initialCollectionId]);
 
-  // Derived: All eligible words for the current filter, excluding those we already finished this session
-  const eligibleWords = useMemo(() => {
-     return words.filter(w => (filter === 'all' || !w.mastered));
-  }, [words, filter]);
+  // Calculate unmastered counts for setup screen
+  const unmasteredCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    // Count for specific collections
+    collections.forEach(c => {
+      const count = words.filter(w => !w.mastered && w.collectionId === c.id).length;
+      counts[c.id] = count;
+    });
 
-  // Derived: Calculate remaining count
-  // Words that are eligible AND not in current batch AND not in completed list
-  const remainingCount = useMemo(() => {
-     const currentBatchSet = new Set(currentBatchIds);
-     return eligibleWords.filter(w => !currentBatchSet.has(w.id) && !completedIds.has(w.id)).length;
-  }, [eligibleWords, currentBatchIds, completedIds]);
+    // Count for all (unmastered total)
+    const totalUnmastered = words.filter(w => !w.mastered).length;
+    counts['all'] = totalUnmastered;
 
-  // Function to initialize or continue session
-  const startBatch = useCallback((reset: boolean) => {
-    // If reset, clear completed history
-    const history = reset ? new Set<number>() : completedIds;
-    if (reset) setCompletedIds(new Set());
+    return counts;
+  }, [words, collections]);
 
-    // Get candidates: eligible words minus history
-    const candidates = words.filter(w => 
-        (filter === 'all' || !w.mastered) && !history.has(w.id)
-    );
+  // Handle Setup Start
+  const handleStartSession = () => {
+    let filteredWords = words.filter(w => !w.mastered);
 
-    if (candidates.length === 0) {
-        setCurrentBatchIds([]);
-        setIsBatchComplete(true);
-        return;
+    if (selectedCollectionId && selectedCollectionId !== 'all') {
+      filteredWords = filteredWords.filter(w => w.collectionId === selectedCollectionId);
+      const col = collections.find(c => c.id === selectedCollectionId);
+      setActiveCollectionName(col ? col.name : 'Unknown Collection');
+    } else {
+      setActiveCollectionName('All Collections');
     }
 
-    // Slice based on limit
-    const limit = sessionLimit === 'all' ? candidates.length : sessionLimit;
-    const nextBatch = candidates.slice(0, limit);
+    // Apply Session Limit
+    if (sessionLimit !== 'all') {
+      filteredWords = filteredWords.slice(0, sessionLimit);
+    }
 
-    setCurrentBatchIds(nextBatch.map(w => w.id));
+    // Deep copy words for session to isolate state (important for Practice Mode vs Normal Mode)
+    const sessionWordsCopy = filteredWords.map(w => ({ ...w }));
+    setSessionWords(sessionWordsCopy);
+    setIsPracticeMode(false);
+    setIsSetupComplete(true);
+    
+    // Initialize batch
+    const initialBatch = sessionWordsCopy.map(w => w.id);
+    setCurrentBatchIds(initialBatch);
+    setCompletedIds(new Set());
+    setCurrentIndex(0);
+    setIsBatchComplete(sessionWordsCopy.length === 0);
+    setBatchMasteredCount(0);
+  };
+
+  const handleReviewAgain = () => {
+    setIsPracticeMode(true);
+    
+    // Reset mastery for all words in the CURRENT session for practice
+    // We reuse sessionWords but reset their status in a new copy
+    const resetWords = sessionWords.map(w => ({ ...w, mastered: false }));
+    setSessionWords(resetWords);
+    
+    // Re-initialize batch with these reset words
+    const newBatch = resetWords.map(w => w.id);
+    setCurrentBatchIds(newBatch);
+    setCompletedIds(new Set());
     setCurrentIndex(0);
     setIsBatchComplete(false);
     setBatchMasteredCount(0);
-  }, [words, filter, sessionLimit, completedIds]);
-
-  // Start initial batch on mount or when filter/limit changes
-  useEffect(() => {
-    startBatch(true);
-  }, [filter, sessionLimit]); // Re-start if filter or limit changes
-
-  // Helper to get current word object from ID
-  const currentWordId = currentBatchIds[currentIndex];
-  const currentWord = words.find(w => w.id === currentWordId);
-
-  // -- Handlers --
-
-  const handleFilterChange = (newFilter: 'all' | 'learning') => {
-    setFilter(newFilter);
-    // Effect will trigger startBatch(true)
   };
+
+  // --- Session Logic ---
+
+  const currentWordId = currentBatchIds[currentIndex];
+  // Look up word in local session state
+  const currentWord = sessionWords.find(w => w.id === currentWordId);
 
   const handleNext = () => {
     if (currentIndex < currentBatchIds.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // Mark current batch as completed in history
+      // Mark current batch as completed
       setCompletedIds(prev => {
           const next = new Set(prev);
           currentBatchIds.forEach(id => next.add(id));
@@ -113,29 +140,31 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   const handleMaster = () => {
     if (!currentWord) return;
 
-    // If already mastered (visually in this session) or mastered in data
     const isMastered = currentWord.mastered;
-
     setAnimatingId(currentWord.id);
     
-    // Optimistic UI update logic handled by animatingId mostly, 
-    // but actual data update happens after timeout
+    // 1. Update local session state immediately
+    setSessionWords(prev => prev.map(w => 
+      w.id === currentWord.id ? { ...w, mastered: !w.mastered } : w
+    ));
+    
     setTimeout(() => {
-      onToggleMastered(currentWord.id);
+      // 2. Sync global state ONLY if not in practice mode
+      if (!isPracticeMode) {
+        onToggleMastered(currentWord.id);
+      }
+
       setAnimatingId(null);
       
-      // If we are marking as mastered (not un-mastering)
       if (!isMastered) {
           setBatchMasteredCount(prev => prev + 1);
       } else {
           setBatchMasteredCount(prev => Math.max(0, prev - 1));
       }
 
-      // Auto-advance
       if (currentIndex < currentBatchIds.length - 1) {
         handleNext();
       } else {
-        // Last card
         setCompletedIds(prev => {
             const next = new Set(prev);
             currentBatchIds.forEach(id => next.add(id));
@@ -146,93 +175,192 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
     }, 600);
   };
 
-  // --- Render States ---
+  // --- Render: Setup Screen ---
+  if (!isSetupComplete) {
+    const totalUnmastered = unmasteredCounts['all'] || 0;
+    
+    // Check if user has ANY unmastered words
+    if (totalUnmastered === 0) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+           <div className="text-6xl mb-6 animate-bounce">🎉</div>
+           <h2 className="text-2xl font-bold text-dark dark:text-dark-text mb-2">All words mastered!</h2>
+           <p className="text-gray-500 dark:text-dark-text-sec mb-8">
+             Great job! You've mastered all the words in your collections. Add more to keep learning.
+           </p>
+           <button
+             onClick={onBackToDashboard}
+             className="w-full max-w-xs bg-primary hover:bg-primary-hover text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-primary/20"
+           >
+             Back to Dashboard
+           </button>
+        </div>
+      );
+    }
 
-  // 1. Completion Screen (Batch End or Empty)
-  if (isBatchComplete || currentBatchIds.length === 0) {
-    const isTrulyEmpty = words.length === 0;
-    const isFilterEmpty = !isTrulyEmpty && currentBatchIds.length === 0 && remainingCount === 0;
+    // Filter user collections to show only those with unmastered words
+    const reviewableCollections = collections
+      .filter(c => c.id !== 'all')
+      .filter(c => (unmasteredCounts[c.id] || 0) > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    // Estimated time calculation (30s per card)
+    const selectedCount = selectedCollectionId 
+       ? (unmasteredCounts[selectedCollectionId] || 0) 
+       : totalUnmastered;
+    
+    // Apply session limit to estimation
+    const actualCount = sessionLimit === 'all' ? selectedCount : Math.min(selectedCount, sessionLimit);
+    const estimatedMinutes = Math.ceil((actualCount * 30) / 60);
 
     return (
-      <div className="h-full flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
-        
-        {isTrulyEmpty ? (
-           // No words in app
-           <div className="flex flex-col items-center">
-              <div className="bg-white dark:bg-dark-surface p-6 rounded-full shadow-sm mb-6">
-                 <BookOpen className="w-12 h-12 text-primary/50" />
+      <div className="h-full flex flex-col p-4 animate-in fade-in duration-300">
+        <div className="flex items-center mb-6">
+          <button 
+            onClick={onBackToDashboard}
+            className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark-surface text-gray-500 transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <h2 className="text-xl font-bold ml-2 text-dark dark:text-dark-text">Start Review</h2>
+        </div>
+
+        <div className="flex-1 overflow-y-auto -mx-2 px-2 custom-scrollbar">
+          <p className="text-sm font-semibold text-gray-500 dark:text-dark-text-sec mb-4 uppercase tracking-wider">
+            What do you want to review?
+          </p>
+          
+          <div className="space-y-3">
+            {/* All Collections Option */}
+            <label className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              selectedCollectionId === null 
+                ? 'border-primary bg-blue-50/50 dark:bg-blue-900/10' 
+                : 'border-gray-100 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-gray-200 dark:hover:border-gray-700'
+            }`}>
+              <div className="flex items-center justify-center w-6 h-6 mr-4 shrink-0">
+                <input 
+                  type="radio" 
+                  name="collection" 
+                  checked={selectedCollectionId === null} 
+                  onChange={() => setSelectedCollectionId(null)}
+                  className="w-5 h-5 text-primary focus:ring-primary border-gray-300"
+                />
               </div>
-              <h2 className="text-xl font-bold text-dark dark:text-dark-text mb-2">No words yet</h2>
-              <p className="text-gray-500 dark:text-dark-text-sec max-w-xs">
-                 Add some words to your collection to start reviewing!
-              </p>
-           </div>
-        ) : (
-           // Session/Batch Complete
-           <div className="flex flex-col items-center w-full max-w-sm">
-             <div className="text-6xl mb-6 animate-bounce">🎉</div>
-             
-             {isFilterEmpty ? (
-                <>
-                   <h2 className="text-2xl font-bold text-dark dark:text-dark-text mb-2">All words reviewed!</h2>
-                   <p className="text-gray-500 dark:text-dark-text-sec mb-8">
-                     You've reviewed everything in this list.
-                   </p>
-                </>
-             ) : (
-                <>
-                   <h2 className="text-2xl font-bold text-dark dark:text-dark-text mb-2">Session Complete!</h2>
-                   <p className="text-lg font-medium text-primary mb-1">
-                      {batchMasteredCount}/{currentBatchIds.length} words mastered
-                   </p>
-                   <p className="text-sm text-gray-400 dark:text-gray-500 mb-8">in this session</p>
-                </>
-             )}
+              <div className="flex-1">
+                <div className="font-bold text-dark dark:text-dark-text">All Collections</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{totalUnmastered} words due</div>
+              </div>
+              <div className="text-2xl opacity-50">📚</div>
+            </label>
 
-             <div className="flex flex-col gap-3 w-full">
-               {/* Only show continue if there are more words available */}
-               {!isFilterEmpty && remainingCount > 0 && (
-                 <>
-                    <p className="text-sm text-gray-500 dark:text-dark-text-sec mb-1">
-                       {remainingCount} more words available
-                    </p>
-                    <button
-                      onClick={() => startBatch(false)}
-                      className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-[0.98] flex items-center justify-center gap-2"
-                    >
-                      <RotateCw className="w-5 h-5" />
-                      Continue Reviewing
-                    </button>
-                 </>
-               )}
+            {/* Specific Collections */}
+            {reviewableCollections.length > 0 && (
+              <>
+                <p className="text-xs font-semibold text-gray-400 mt-6 mb-2 uppercase tracking-wider">
+                  Review by Collection
+                </p>
+                {reviewableCollections.map(col => (
+                  <label key={col.id} className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    selectedCollectionId === col.id 
+                      ? 'border-primary bg-blue-50/50 dark:bg-blue-900/10' 
+                      : 'border-gray-100 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-gray-200 dark:hover:border-gray-700'
+                  }`}>
+                    <div className="flex items-center justify-center w-6 h-6 mr-4 shrink-0">
+                      <input 
+                        type="radio" 
+                        name="collection" 
+                        checked={selectedCollectionId === col.id} 
+                        onChange={() => setSelectedCollectionId(col.id)}
+                        className="w-5 h-5 text-primary focus:ring-primary border-gray-300"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-bold text-dark dark:text-dark-text">{col.name}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{unmasteredCounts[col.id]} words due</div>
+                    </div>
+                    <div className="text-2xl">{col.icon}</div>
+                  </label>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
 
-               <button
-                 onClick={onBackToDashboard}
-                 className={`w-full font-bold py-3.5 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 ${
-                    remainingCount > 0 && !isFilterEmpty
-                       ? 'bg-transparent border-2 border-gray-200 dark:border-dark-border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-surface'
-                       : 'bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/20'
-                 }`}
-               >
-                 <LayoutDashboard className="w-5 h-5" />
-                 Back to Dashboard
-               </button>
-               
-               {isFilterEmpty && filter === 'learning' && (
-                 <button
-                   onClick={() => handleFilterChange('all')}
-                   className="mt-2 text-sm text-gray-500 hover:text-primary transition-colors"
-                 >
-                   Review all words instead
-                 </button>
-               )}
-             </div>
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-dark-border space-y-4">
+           <div className="flex items-center justify-between text-sm text-gray-500 dark:text-dark-text-sec px-1">
+             <span>Estimated time:</span>
+             <span className="font-bold text-dark dark:text-dark-text">~{estimatedMinutes} minute{estimatedMinutes !== 1 ? 's' : ''}</span>
            </div>
-        )}
+
+           <button
+             onClick={handleStartSession}
+             className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
+           >
+             <PlayCircle className="w-5 h-5 fill-current" />
+             Start Review
+           </button>
+        </div>
       </div>
     );
   }
 
+  // --- Render: Session Complete ---
+  if (isBatchComplete || currentBatchIds.length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+         <div className="flex flex-col items-center w-full max-w-sm">
+           <div className="text-6xl mb-6 animate-bounce">🎉</div>
+           
+           <h2 className="text-2xl font-bold text-dark dark:text-dark-text mb-2">
+             {isPracticeMode ? "Practice Complete!" : "Session Complete!"}
+           </h2>
+           <p className="text-sm text-gray-500 dark:text-dark-text-sec mb-1">
+             {activeCollectionName}
+           </p>
+           <p className="text-lg font-medium text-primary mb-8">
+              {batchMasteredCount}/{currentBatchIds.length} words mastered
+           </p>
+
+           <div className="flex flex-col gap-3 w-full">
+             
+             {/* Primary: Back to Dashboard */}
+             <button
+               onClick={onBackToDashboard}
+               className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-lg shadow-primary/20 active:scale-[0.98] flex items-center justify-center gap-2"
+             >
+               <LayoutDashboard className="w-5 h-5" />
+               Back to Dashboard
+             </button>
+
+             {/* Secondary: Review Again */}
+             <button
+               onClick={handleReviewAgain}
+               className="w-full bg-transparent border-2 border-gray-200 dark:border-dark-border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-surface font-bold py-3.5 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+             >
+               <RotateCw className="w-5 h-5" />
+               Review Again
+             </button>
+
+             {/* Tertiary: Start New Session (if needed) */}
+             {!isPracticeMode && (
+               <button
+                 onClick={() => {
+                   setIsSetupComplete(false);
+                   setSessionWords([]);
+                   setCurrentBatchIds([]);
+                 }}
+                 className="mt-2 text-primary font-semibold hover:underline text-sm"
+               >
+                 Start New Session
+               </button>
+             )}
+           </div>
+         </div>
+      </div>
+    );
+  }
+
+  // --- Render: Active Session ---
   if (!currentWord) return null;
 
   const isMasteredState = currentWord.mastered || animatingId === currentWord.id;
@@ -241,32 +369,18 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
     <div className="flex flex-col h-full gap-6 animate-in fade-in duration-500 max-w-2xl mx-auto w-full relative">
       
       {/* Session Header */}
-      <div className="absolute top-0 left-0 right-0 flex justify-between items-center px-1 py-1 z-10 pointer-events-none">
-        {/* Session Stats */}
-        <div className="text-xs font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1 bg-white/50 dark:bg-dark-bg/50 backdrop-blur-sm px-2 py-1 rounded-full">
-           <span>Reviewing {currentBatchIds.length} words</span>
-           {remainingCount > 0 && (
-              <>
-                 <span className="opacity-50">•</span>
-                 <span>{remainingCount} more</span>
-              </>
-           )}
-        </div>
-
-        {/* Filter buttons (pointer-events-auto needed because parent is none) */}
-        <div className="flex bg-gray-100 dark:bg-dark-surface p-0.5 rounded-lg border border-gray-200 dark:border-dark-border pointer-events-auto">
-          <button
-             onClick={() => handleFilterChange('learning')}
-             className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${filter === 'learning' ? 'bg-white dark:bg-dark-bg shadow-sm text-primary' : 'text-gray-400'}`}
-          >
-            Learning
-          </button>
-          <button
-             onClick={() => handleFilterChange('all')}
-             className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-colors ${filter === 'all' ? 'bg-white dark:bg-dark-bg shadow-sm text-primary' : 'text-gray-400'}`}
-          >
-            All
-          </button>
+      <div className="absolute top-0 left-0 right-0 flex justify-center items-center px-1 py-1 z-10 pointer-events-none">
+        <div className="flex flex-col items-center gap-1">
+          <div className="text-xs font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1 bg-white/80 dark:bg-dark-bg/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-gray-100 dark:border-dark-border">
+             <span className="font-semibold text-primary">{activeCollectionName}</span>
+             <span className="opacity-50">•</span>
+             <span>{currentBatchIds.length} cards</span>
+          </div>
+          {isPracticeMode && (
+            <div className="text-[10px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full border border-orange-100 dark:border-orange-800 shadow-sm animate-in slide-in-from-top-2 fade-in">
+              Practice Mode - Progress not saved
+            </div>
+          )}
         </div>
       </div>
 
@@ -277,7 +391,7 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
           {/* Progress Indicator */}
           <div className="absolute top-6 right-6 px-3 py-1 bg-gray-50 dark:bg-dark-bg rounded-full border border-gray-100 dark:border-dark-border">
             <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
-              Card {currentIndex + 1} / {currentBatchIds.length}
+              {currentIndex + 1} / {currentBatchIds.length}
             </span>
           </div>
 
