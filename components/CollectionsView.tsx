@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Collection, VocabWord } from '../types';
 import { Plus, MoreVertical, FolderOpen, Pencil, Trash2, Eye, PlayCircle } from 'lucide-react';
 import { isCardDue, getSRSStage } from '../utils/srs';
+import { Tooltip } from './Tooltip';
 
 interface CollectionsViewProps {
   collections: Collection[];
@@ -246,6 +247,9 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
              <span className="text-orange-500">{stats.learning} learning</span>
              <span>•</span>
              <span className="text-green-500">{stats.mature} mature</span>
+             {collection.id === 'all' && (
+                <Tooltip content="Due = ready to review. Learning = still memorizing. Mature = strong memory." />
+             )}
           </div>
 
           {/* Progress Bar (Maturity) */}

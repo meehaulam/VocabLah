@@ -4,6 +4,7 @@ import { SessionLimitOption } from './SettingsView';
 import { ChevronLeft, RotateCw, PlayCircle, LayoutDashboard, Check, Calendar, Clock, History, Brain, TrendingUp, BookOpen, AlertCircle } from 'lucide-react';
 import { calculateSM2, getSRSIntervalPreview, Difficulty, isCardDue, getNextDueInfo, getSRSSettings, getDailyCounts, incrementDailyCounts } from '../utils/srs';
 import { getDaysDifference, getTodayDate, addDays } from '../utils/date';
+import { Tooltip } from './Tooltip';
 
 interface ReviewModeProps {
   words: VocabWord[];
@@ -729,45 +730,53 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
            </div>
         )}
 
+        {/* Difficulty Help Text */}
+        <div className={`flex flex-col items-center mb-2 transition-all duration-300 ${isFlipped ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+            <div className="flex items-center gap-1 text-[13px] text-gray-400 dark:text-gray-500">
+               Rate how well you remembered
+               <Tooltip content="Again = didn't remember. Hard = struggled. Good = remembered well. Easy = very easy." />
+            </div>
+        </div>
+
         {/* 4-Button Difficulty Grid */}
         <div className={`grid grid-cols-4 gap-2 sm:gap-3 w-full transition-all duration-300 ${isFlipped ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
           {/* Again */}
           <button
             onClick={() => handleRate('again')}
-            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:text-red-300 dark:border-red-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28"
+            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:text-red-300 dark:border-red-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28 relative"
           >
             <span className="text-xl sm:text-2xl mb-1">❌</span>
-            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide">Again</span>
+            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1">Again</span>
             <span className="text-[10px] opacity-75 font-medium mt-1">{intervals?.again}</span>
           </button>
 
           {/* Hard */}
           <button
             onClick={() => handleRate('hard')}
-            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28"
+            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28 relative"
           >
             <span className="text-xl sm:text-2xl mb-1">😐</span>
-            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide">Hard</span>
+            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1">Hard</span>
             <span className="text-[10px] opacity-75 font-medium mt-1">{intervals?.hard}</span>
           </button>
 
           {/* Good */}
           <button
             onClick={() => handleRate('good')}
-            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28"
+            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28 relative"
           >
             <span className="text-xl sm:text-2xl mb-1">✅</span>
-            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide">Good</span>
+            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1">Good</span>
             <span className="text-[10px] opacity-75 font-medium mt-1">{intervals?.good}</span>
           </button>
 
           {/* Easy */}
           <button
             onClick={() => handleRate('easy')}
-            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:text-green-300 dark:border-green-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28"
+            className="flex flex-col items-center justify-center py-3 px-1 rounded-xl border-b-4 bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:text-green-300 dark:border-green-900 active:border-b-0 active:translate-y-1 transition-all h-24 sm:h-28 relative"
           >
             <span className="text-xl sm:text-2xl mb-1">💯</span>
-            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide">Easy</span>
+            <span className="font-bold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-1">Easy</span>
             <span className="text-[10px] opacity-75 font-medium mt-1">{intervals?.easy}</span>
           </button>
         </div>

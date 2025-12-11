@@ -3,6 +3,7 @@ import { VocabWord } from '../types';
 import { PlusCircle, BookOpen, CheckCircle2, TrendingUp, CalendarClock, AlertTriangle, X, Calendar } from 'lucide-react';
 import { isCardDue } from '../utils/srs';
 import { getTodayDate, addDays } from '../utils/date';
+import { Tooltip } from './Tooltip';
 
 interface DashboardProps {
   words: VocabWord[];
@@ -165,6 +166,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
              <div className="space-y-1">
                <h2 className={`text-2xl sm:text-3xl font-bold ${isUrgent ? 'text-orange-600 dark:text-orange-500' : 'text-dark dark:text-dark-text'}`}>
                  {dueCount} cards due today
+                 <Tooltip content="Cards ready for review based on spaced repetition. The app shows cards when your brain is ready to learn!" />
                </h2>
                {overdueCount > 0 && (
                  <p className="flex items-center justify-center gap-1.5 text-sm font-semibold text-red-500 bg-red-50 dark:bg-red-900/20 py-1 px-3 rounded-full inline-flex">
@@ -244,7 +246,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           )}
 
           {/* SRS Stats Row */}
-          <div className="flex items-center justify-center gap-4 text-xs font-medium text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-center gap-4 text-xs font-medium text-gray-500 dark:text-gray-400 flex-wrap">
             {newCount > 0 && (
               <div className="flex items-center gap-1.5" title="New cards">
                  <span className="w-2 h-2 rounded-full bg-blue-400"></span>
@@ -254,10 +256,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center gap-1.5" title="Cards in learning phase">
                <span className="w-2 h-2 rounded-full bg-orange-400"></span>
                <span>{learningCount} learning</span>
+               <Tooltip content="Cards you're still memorizing. Reviewed more frequently." />
             </div>
             <div className="flex items-center gap-1.5" title="Mature cards (interval > 21 days)">
                <span className="w-2 h-2 rounded-full bg-green-500"></span>
                <span>{matureCount} mature</span>
+               <Tooltip content="Cards in long-term memory. Reviewed less often (21+ days interval)." />
             </div>
           </div>
         </div>

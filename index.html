@@ -105,7 +105,7 @@
         0% { stroke-dasharray: 0 100; }
       }
 
-      /* Flashcard Flip Styles */
+      /* Flashcard Flip Styles (Main App) */
       .flashcard {
         perspective: 1000px;
         cursor: pointer;
@@ -153,6 +153,188 @@
 
       .flashcard-back {
         transform: rotateY(180deg);
+      }
+
+      /* Tutorial Demo Card Styles */
+      .tutorial-card-demo {
+        perspective: 1000px;
+      }
+
+      .demo-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 20px;
+        border-radius: 1rem;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+        position: relative;
+        width: 100%;
+      }
+
+      .demo-card:hover {
+        transform: scale(1.02);
+      }
+      
+      .demo-card.flipped {
+        transform: rotateY(180deg);
+      }
+
+      .demo-front,
+      .demo-back {
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1rem;
+      }
+
+      .demo-front {
+        transform: rotateY(0deg);
+      }
+
+      .demo-back {
+        transform: rotateY(180deg);
+      }
+
+      /* Tutorial Timeline */
+      .simple-timeline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin: 24px 0;
+        flex-wrap: wrap;
+      }
+
+      .timeline-item {
+        text-align: center;
+        min-width: 60px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .timeline-day {
+        font-size: 13px;
+        font-weight: bold;
+        color: #3B82F6; /* blue-500 */
+        margin-bottom: 4px;
+      }
+
+      .timeline-action {
+        font-size: 11px;
+        color: #6B7280; /* gray-500 */
+      }
+      
+      .dark .timeline-day {
+        color: #60A5FA; /* blue-400 */
+      }
+      
+      .dark .timeline-action {
+        color: #9CA3AF; /* gray-400 */
+      }
+
+      .timeline-arrow {
+        color: #9CA3AF;
+        font-size: 16px;
+      }
+
+      /* Tooltip Styles */
+      .tooltip-wrapper {
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      .tooltip-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        background: #3B82F6;
+        color: white;
+        border-radius: 50%;
+        font-size: 10px;
+        font-weight: bold;
+        cursor: help;
+        margin-left: 4px;
+        transition: all 0.2s;
+        line-height: 1;
+      }
+
+      .tooltip-icon:hover {
+        background: #2563EB;
+        transform: scale(1.1);
+      }
+
+      .tooltip-text {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1F2937;
+        color: white;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        width: 200px;
+        text-align: left;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: opacity 0.3s;
+        pointer-events: none;
+        font-weight: normal;
+        line-height: 1.4;
+      }
+
+      .tooltip-text::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: #1F2937;
+      }
+
+      .tooltip-wrapper:hover .tooltip-text,
+      .tooltip-wrapper.active .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      /* Dark mode tooltip support */
+      .dark .tooltip-text {
+        background: #374151;
+      }
+
+      .dark .tooltip-text::after {
+        border-top-color: #374151;
+      }
+
+      @media (max-width: 640px) {
+        .tooltip-icon {
+          width: 18px;
+          height: 18px;
+          font-size: 11px;
+        }
       }
     </style>
   <script type="importmap">

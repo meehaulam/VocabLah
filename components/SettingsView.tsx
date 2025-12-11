@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, AlertTriangle, RotateCcw, BarChart3, X, Activity, Layers, Calendar } from 'lucide-react';
+import { ArrowLeft, Trash2, AlertTriangle, RotateCcw, BarChart3, X, Activity, Layers, Calendar, HelpCircle, GraduationCap, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
 import { VocabWord } from '../types';
 import { SRS_SETTINGS_KEYS, getSRSSettings, getDailyCounts } from '../utils/srs';
+import { Tooltip } from './Tooltip';
 
 export type ThemeOption = 'light' | 'dark' | 'auto';
 export type SessionLimitOption = 10 | 20 | 50 | 'all';
@@ -15,7 +16,107 @@ interface SettingsViewProps {
   onResetData: () => void;
   words: VocabWord[];
   onResetSRSData: () => void;
+  onReplayTutorial: () => void;
 }
+
+const FAQ_DATA = [
+  {
+    category: "Getting Started",
+    items: [
+      { q: "How do I add words?", a: "Tap \"+ Add Word\" button on Dashboard or in Collections. Enter the word and meaning, optionally select a collection, then save." },
+      { q: "What are Collections?", a: "Collections help organize words by topic (Work, Food, Transport, etc.). You can create unlimited collections and review them separately." }
+    ]
+  },
+  {
+    category: "Reviewing",
+    items: [
+      { q: "What does \"Due today\" mean?", a: "Cards ready for review based on spaced repetition. The app shows cards when your brain is ready to learn them for maximum retention." },
+      { q: "Why can't I review all my words?", a: "The app uses spaced repetition - only showing cards that are due. This is scientifically proven to be more effective than reviewing everything at once." },
+      { q: "How do the difficulty buttons work?", a: (
+        <div className="space-y-1">
+          <p><span className="font-bold text-gray-800 dark:text-gray-200">Again:</span> Didn't remember - review again today</p>
+          <p><span className="font-bold text-gray-800 dark:text-gray-200">Hard:</span> Struggled to recall - shorter interval</p>
+          <p><span className="font-bold text-gray-800 dark:text-gray-200">Good:</span> Remembered well - normal interval</p>
+          <p><span className="font-bold text-gray-800 dark:text-gray-200">Easy:</span> Very easy - longer interval</p>
+          <p className="pt-2">The app adjusts intervals based on your ratings.</p>
+        </div>
+      )}
+    ]
+  },
+  {
+    category: "Understanding Progress",
+    items: [
+      { q: "What is \"Learning\" vs \"Mature\"?", a: (
+        <div className="space-y-1">
+          <p><span className="font-bold text-gray-800 dark:text-gray-200">Learning:</span> Cards you're still memorizing (reviewed frequently)</p>
+          <p><span className="font-bold text-gray-800 dark:text-gray-200">Mature:</span> Cards in long-term memory with 21+ day intervals (reviewed less often)</p>
+        </div>
+      )},
+      { 
+        q: "What is spaced repetition?", 
+        isSRSLink: true,
+        a: "A scientifically proven learning technique that shows information at increasing intervals. It improves retention by 200-300% compared to traditional studying." 
+      }
+    ]
+  },
+  {
+    category: "Settings",
+    items: [
+      { q: "How do I change review limits?", a: "Go to Settings → Session Limit to adjust cards per review session. You can also set \"New Cards Per Day\" limit in SRS settings." },
+      { q: "How do I backup my data?", a: "Currently data is stored locally on your device. Avoid clearing browser data to preserve your words. Cloud sync coming soon!" }
+    ]
+  },
+  {
+    category: "Troubleshooting",
+    items: [
+      { q: "My cards disappeared!", a: "Check if you're viewing the correct collection. If cards are truly missing, you may have cleared browser data. Always keep browser data for Vocab Lah." },
+      { q: "Dark mode not working?", a: "Toggle dark mode in Settings. If it doesn't persist, check browser settings aren't blocking local storage." }
+    ]
+  }
+];
+
+interface FAQItemProps {
+  question: string;
+  answer: React.ReactNode;
+  onSRSLink?: () => void;
+}
+
+const FAQItem: React.FC<FAQItemProps> = ({ question, answer, onSRSLink }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="border border-gray-200 dark:border-dark-border rounded-lg overflow-hidden mb-2 bg-white dark:bg-dark-surface">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-bg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+      >
+        <span className="font-medium text-dark dark:text-dark-text text-sm sm:text-base pr-4">{question}</span>
+        {isOpen ? <ChevronUp className="w-4 h-4 text-gray-500 shrink-0" /> : <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />}
+      </button>
+      <div 
+        className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}
+      >
+        <div className="p-4 text-sm text-gray-600 dark:text-gray-300 leading-relaxed border-t border-gray-100 dark:border-dark-border">
+          {answer}
+          {onSRSLink && (
+            <>
+              {' '}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSRSLink();
+                }}
+                className="text-primary hover:underline font-medium inline-block"
+              >
+                Learn more
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   theme,
@@ -25,11 +126,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onBack,
   onResetData,
   words,
-  onResetSRSData
+  onResetSRSData,
+  onReplayTutorial
 }) => {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isResetSRSModalOpen, setIsResetSRSModalOpen] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isFAQModalOpen, setIsFAQModalOpen] = useState(false);
+  const [isSRSGuideModalOpen, setIsSRSGuideModalOpen] = useState(false);
   
   // SRS Settings State
   const [newCardsLimit, setNewCardsLimit] = useState<string>('10');
@@ -97,6 +201,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const stats = getStatsData();
 
+  const handleOpenSRSFromFAQ = () => {
+    setIsFAQModalOpen(false);
+    setTimeout(() => {
+      setIsSRSGuideModalOpen(true);
+    }, 200); // Small delay for smooth transition
+  };
+
   return (
     <div className="flex flex-col h-full bg-background dark:bg-dark-bg text-dark dark:text-dark-text animate-in fade-in slide-in-from-right-4 duration-300">
       {/* Header */}
@@ -124,7 +235,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {/* New Cards Limit */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <label htmlFor="newCards" className="text-sm font-semibold text-dark dark:text-dark-text">New Cards Per Day</label>
+                <label htmlFor="newCards" className="text-sm font-semibold text-dark dark:text-dark-text flex items-center gap-2">
+                  New Cards Per Day
+                  <Tooltip content="Limit new words per day to avoid overwhelm." />
+                </label>
                 <select 
                   id="newCards" 
                   value={newCardsLimit} 
@@ -163,7 +277,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {/* Auto Mature */}
             <div className="flex items-center justify-between">
                <div className="flex flex-col gap-1 pr-4">
-                 <label htmlFor="autoMature" className="text-sm font-semibold text-dark dark:text-dark-text">Auto-Mark as Mature</label>
+                 <label htmlFor="autoMature" className="text-sm font-semibold text-dark dark:text-dark-text flex items-center gap-2">
+                    Auto-Mark as Mature
+                    <Tooltip content="Cards with 60+ day intervals automatically marked as mastered." />
+                 </label>
                  <p className="text-xs text-gray-500 dark:text-dark-text-sec">Automatically mark cards with 60+ day intervals as mastered.</p>
                </div>
                <div className="relative inline-flex items-center cursor-pointer">
@@ -180,7 +297,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             {/* Learning Steps */}
             <div className="flex flex-col gap-2">
-               <label className="text-sm font-semibold text-dark dark:text-dark-text">Learning Steps</label>
+               <label className="text-sm font-semibold text-dark dark:text-dark-text flex items-center gap-2">
+                 Learning Steps
+                 <Tooltip content="Initial review intervals for new cards: 1 day → 6 days → long-term." />
+               </label>
                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-dark-bg p-3 rounded-lg border border-gray-100 dark:border-dark-border">
                   <input 
                     type="number" 
@@ -260,7 +380,71 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </section>
 
-        {/* Section 3: Danger Zone */}
+        {/* Section 3: Help & Support */}
+        <section className="space-y-4">
+          <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider pl-1 flex items-center gap-2">
+            <HelpCircle className="w-4 h-4" />
+            Help & Support
+          </h2>
+          
+          <div className="bg-white dark:bg-dark-surface rounded-xl p-4 shadow-sm border border-gray-100 dark:border-dark-border space-y-2">
+             <button
+                onClick={() => setIsFAQModalOpen(true)}
+                className="w-full flex items-center justify-between text-left p-2 hover:bg-gray-50 dark:hover:bg-dark-bg rounded-lg transition-colors group"
+             >
+                <div className="flex items-center gap-3">
+                   <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-400">
+                      <HelpCircle className="w-5 h-5" />
+                   </div>
+                   <div>
+                      <h3 className="font-semibold text-dark dark:text-dark-text text-sm">Frequently Asked Questions</h3>
+                      <p className="text-xs text-gray-500 dark:text-dark-text-sec">Common questions & answers</p>
+                   </div>
+                </div>
+                <div className="text-gray-400 group-hover:text-primary transition-colors">
+                  <ArrowLeft className="w-5 h-5 rotate-180" />
+                </div>
+             </button>
+
+             <button
+                onClick={() => setIsSRSGuideModalOpen(true)}
+                className="w-full flex items-center justify-between text-left p-2 hover:bg-gray-50 dark:hover:bg-dark-bg rounded-lg transition-colors group"
+             >
+                <div className="flex items-center gap-3">
+                   <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600 dark:text-green-400">
+                      <BookOpen className="w-5 h-5" />
+                   </div>
+                   <div>
+                      <h3 className="font-semibold text-dark dark:text-dark-text text-sm">Understanding Spaced Repetition</h3>
+                      <p className="text-xs text-gray-500 dark:text-dark-text-sec">How the learning algorithm works</p>
+                   </div>
+                </div>
+                <div className="text-gray-400 group-hover:text-primary transition-colors">
+                  <ArrowLeft className="w-5 h-5 rotate-180" />
+                </div>
+             </button>
+
+             <button
+                onClick={onReplayTutorial}
+                className="w-full flex items-center justify-between text-left p-2 hover:bg-gray-50 dark:hover:bg-dark-bg rounded-lg transition-colors group"
+             >
+                <div className="flex items-center gap-3">
+                   <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600 dark:text-purple-400">
+                      <GraduationCap className="w-5 h-5" />
+                   </div>
+                   <div>
+                      <h3 className="font-semibold text-dark dark:text-dark-text text-sm">Replay Tutorial</h3>
+                      <p className="text-xs text-gray-500 dark:text-dark-text-sec">View the welcome guide again</p>
+                   </div>
+                </div>
+                <div className="text-gray-400 group-hover:text-primary transition-colors">
+                  <ArrowLeft className="w-5 h-5 rotate-180" />
+                </div>
+             </button>
+          </div>
+        </section>
+
+        {/* Section 4: Danger Zone */}
         <section className="space-y-4">
           <h2 className="text-xs font-bold text-red-500/80 uppercase tracking-wider pl-1">Danger Zone</h2>
           
@@ -293,6 +477,107 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </section>
       </div>
+
+      {/* FAQ Modal */}
+      {isFAQModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-dark-border flex flex-col max-h-[85vh]">
+              <div className="p-4 border-b border-gray-100 dark:border-dark-border flex items-center justify-between shrink-0 bg-white dark:bg-dark-surface z-10">
+                 <h3 className="font-bold text-dark dark:text-dark-text flex items-center gap-2 text-lg">
+                   ❓ Frequently Asked Questions
+                 </h3>
+                 <button onClick={() => setIsFAQModalOpen(false)} className="p-1 rounded-full text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-bg hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                   <X className="w-6 h-6" />
+                 </button>
+              </div>
+              <div className="p-4 overflow-y-auto custom-scrollbar">
+                 {FAQ_DATA.map((section, idx) => (
+                    <div key={idx} className="mb-6 last:mb-0">
+                       <h4 className="text-primary dark:text-blue-400 text-lg font-semibold mb-3 border-b-2 border-primary/20 dark:border-blue-900/30 pb-2">
+                         {section.category}
+                       </h4>
+                       <div>
+                         {section.items.map((item, i) => (
+                           <FAQItem 
+                             key={i} 
+                             question={item.q} 
+                             answer={item.a} 
+                             onSRSLink={(item as any).isSRSLink ? handleOpenSRSFromFAQ : undefined}
+                           />
+                         ))}
+                       </div>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* SRS Guide Modal */}
+      {isSRSGuideModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-dark-border flex flex-col max-h-[85vh]">
+              <div className="p-5 border-b border-gray-100 dark:border-dark-border flex items-center justify-between shrink-0">
+                 <h3 className="font-bold text-dark dark:text-dark-text flex items-center gap-2 text-lg">
+                   📖 Understanding Spaced Repetition
+                 </h3>
+                 <button onClick={() => setIsSRSGuideModalOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                   <X className="w-6 h-6" />
+                 </button>
+              </div>
+              <div className="p-6 overflow-y-auto custom-scrollbar space-y-6 text-dark dark:text-dark-text">
+                 <div>
+                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                     <strong className="text-primary">Spaced Repetition System (SRS)</strong> is a learning method that schedules reviews at increasing intervals: just before you're likely to forget.
+                   </p>
+                 </div>
+
+                 <div className="bg-gray-50 dark:bg-dark-bg p-4 rounded-xl border border-gray-200 dark:border-dark-border">
+                   <h4 className="font-bold mb-3 flex items-center gap-2 text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                     <Activity className="w-4 h-4" /> The Forgetting Curve
+                   </h4>
+                   <div className="space-y-3 text-sm">
+                      <div className="flex gap-3 items-start">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold text-xs">1</div>
+                        <div>
+                          <span className="font-bold block">First Review</span>
+                          <span className="text-gray-500 dark:text-gray-400">1 day after learning</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 items-start">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 font-bold text-xs">2</div>
+                        <div>
+                          <span className="font-bold block">Second Review</span>
+                          <span className="text-gray-500 dark:text-gray-400">6 days later (if recalled)</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 items-start">
+                        <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center shrink-0 font-bold text-xs">3</div>
+                        <div>
+                          <span className="font-bold block">Mastery</span>
+                          <span className="text-gray-500 dark:text-gray-400">Intervals grow to weeks/months</span>
+                        </div>
+                      </div>
+                   </div>
+                 </div>
+
+                 <div>
+                    <h4 className="font-bold text-lg mb-2">Why it works</h4>
+                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                      Every time you recall a memory just as it's fading, that memory becomes stronger. SRS ensures you spend time only on the words you struggle with, making learning <strong>2-3x more efficient</strong> than traditional cramming.
+                    </p>
+                 </div>
+
+                 <button 
+                   onClick={() => setIsSRSGuideModalOpen(false)}
+                   className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-3 rounded-lg shadow-sm transition-colors"
+                 >
+                   Got it!
+                 </button>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Stats Modal */}
       {isStatsModalOpen && (

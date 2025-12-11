@@ -12,6 +12,7 @@ import { SettingsView, ThemeOption, SessionLimitOption } from './components/Sett
 import { CreateCollectionModal } from './components/CreateCollectionModal';
 import { EditCollectionModal } from './components/EditCollectionModal';
 import { DeleteCollectionModal } from './components/DeleteCollectionModal';
+import { TutorialOverlay } from './components/TutorialOverlay';
 import { saveCollections } from './utils/storage';
 import { getTodayDate, addDays } from './utils/date';
 
@@ -19,6 +20,7 @@ const LOCAL_STORAGE_KEY = "vocab_lah_words";
 const COLLECTIONS_STORAGE_KEY = "vocab_lah_collections";
 const THEME_STORAGE_KEY = "vocab_lah_theme";
 const SESSION_LIMIT_KEY = "vocab_lah_session_limit";
+const TUTORIAL_COMPLETED_KEY = "vocab_lah_tutorial_completed";
 
 const App: React.FC = () => {
   const [words, setWords] = useState<VocabWord[]>([]);
@@ -41,6 +43,7 @@ const App: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addModalInitialCollectionId, setAddModalInitialCollectionId] = useState<string | null>(null);
   const [isCreateCollectionModalOpen, setIsCreateCollectionModalOpen] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   
   // Collection Action States
   const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
@@ -148,6 +151,27 @@ const App: React.FC = () => {
     initializeData();
   }, []);
 
+  // Check Tutorial Status
+  useEffect(() => {
+    const isTutorialCompleted = localStorage.getItem(TUTORIAL_COMPLETED_KEY);
+    if (!isTutorialCompleted) {
+      // Small delay for smoother entry
+      const timer = setTimeout(() => {
+        setShowTutorial(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const handleTutorialComplete = () => {
+    localStorage.setItem(TUTORIAL_COMPLETED_KEY, 'true');
+    setShowTutorial(false);
+  };
+
+  const handleReplayTutorial = () => {
+    setShowTutorial(true);
+  };
+
   // Cleanup Streak Data (One-time)
   useEffect(() => {
     localStorage.removeItem("vocab_lah_streak");
@@ -230,6 +254,7 @@ const App: React.FC = () => {
     localStorage.removeItem(THEME_STORAGE_KEY);
     localStorage.removeItem(SESSION_LIMIT_KEY);
     localStorage.removeItem(COLLECTIONS_STORAGE_KEY);
+    localStorage.removeItem(TUTORIAL_COMPLETED_KEY);
     
     setWords([]);
     // Reset collections to default state
@@ -258,6 +283,9 @@ const App: React.FC = () => {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Show tutorial again after reset
+    setTimeout(() => setShowTutorial(true), 800);
   };
 
   const handleResetSRSData = () => {
@@ -479,6 +507,7 @@ const App: React.FC = () => {
              onResetData={handleResetData}
              words={words}
              onResetSRSData={handleResetSRSData}
+             onReplayTutorial={handleReplayTutorial}
           />
         );
       default:
@@ -542,6 +571,13 @@ const App: React.FC = () => {
         wordCount={deletingCollection ? words.filter(w => w.collectionId === deletingCollection.id).length : 0}
         onClose={() => setDeletingCollection(null)}
         onDelete={handleDeleteCollection}
+      />
+
+      {/* Tutorial Overlay */}
+      <TutorialOverlay 
+        isOpen={showTutorial} 
+        onComplete={handleTutorialComplete}
+        onClose={() => setShowTutorial(false)}
       />
     </div>
   );
