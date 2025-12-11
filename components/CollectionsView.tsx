@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Collection, VocabWord } from '../types';
 import { Plus, MoreVertical, FolderOpen, Pencil, Trash2, Eye, PlayCircle } from 'lucide-react';
+import { isCardDue, getSRSStage } from '../utils/srs';
 
 interface CollectionsViewProps {
   collections: Collection[];
@@ -19,17 +20,33 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
   onEditCollection,
   onDeleteCollection
 }) => {
-  // Helper to calculate stats
+  // Helper to calculate SRS stats
   const getStats = (collectionId: string) => {
     const collectionWords = words.filter(w => 
       collectionId === 'all' ? true : w.collectionId === collectionId
     );
-    const total = collectionWords.length;
-    const mastered = collectionWords.filter(w => w.mastered).length;
-    const notMastered = total - mastered;
-    const percentage = total > 0 ? Math.round((mastered / total) * 100) : 0;
     
-    return { total, mastered, notMastered, percentage };
+    const total = collectionWords.length;
+    const due = collectionWords.filter(isCardDue).length;
+    
+    // Stages
+    let learning = 0;
+    let mature = 0;
+    
+    collectionWords.forEach(w => {
+       const stage = getSRSStage(w);
+       if (stage.type === 'mature') mature++;
+       else if (stage.type === 'learning' || stage.type === 'young') learning++;
+       // 'new' is not counted in learning/mature explicitly for the stats line "X learning • Y mature" usually
+    });
+    
+    // Or strictly follow prompt: Learning (interval < 21)
+    learning = collectionWords.filter(w => w.repetitions > 0 && w.interval < 21).length;
+    mature = collectionWords.filter(w => w.interval >= 21).length;
+    
+    const maturePercentage = total > 0 ? Math.round((mature / total) * 100) : 0;
+    
+    return { total, due, learning, mature, maturePercentage };
   };
 
   const allWordsCollection = collections.find(c => c.id === 'all');
@@ -58,10 +75,7 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
           <CollectionCard
             collection={allWordsCollection}
             stats={getStats('all')}
-            onClick={() => {
-              console.log("Clicked All Words");
-              onOpenCollection('all');
-            }}
+            onClick={() => onOpenCollection('all')}
             onEdit={onEditCollection}
             onDelete={onDeleteCollection}
             showMenu={false}
@@ -80,10 +94,7 @@ export const CollectionsView: React.FC<CollectionsViewProps> = ({
                   key={collection.id}
                   collection={collection}
                   stats={getStats(collection.id)}
-                  onClick={() => {
-                    console.log(`Clicked ${collection.name}`);
-                    onOpenCollection(collection.id);
-                  }}
+                  onClick={() => onOpenCollection(collection.id)}
                   onEdit={onEditCollection}
                   onDelete={onDeleteCollection}
                   showMenu={true}
@@ -111,9 +122,10 @@ interface CollectionCardProps {
   collection: Collection;
   stats: {
     total: number;
-    mastered: number;
-    notMastered: number;
-    percentage: number;
+    due: number;
+    learning: number;
+    mature: number;
+    maturePercentage: number;
   };
   onClick: () => void;
   onEdit: (c: Collection) => void;
@@ -144,12 +156,20 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
       
       <div className="pl-3">
         {/* Header Row */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-center flex-wrap gap-2">
             <span className="text-2xl" role="img" aria-label="icon">{collection.icon}</span>
-            <h3 className="text-lg font-bold text-dark dark:text-dark-text truncate max-w-[180px] sm:max-w-[200px]">
-              {collection.name} <span className="text-gray-400 dark:text-gray-500 font-normal text-base">({stats.total})</span>
+            <h3 className="text-lg font-bold text-dark dark:text-dark-text truncate max-w-[180px] sm:max-w-[200px] flex items-center">
+              {collection.name} 
+              <span className="text-gray-400 dark:text-gray-500 font-normal text-base ml-1">({stats.total})</span>
             </h3>
+            
+            {/* Due Badge */}
+            {stats.due > 0 && (
+              <span className="bg-red-500 text-white rounded-full px-2 py-0.5 text-xs font-bold animate-pulse">
+                {stats.due} due
+              </span>
+            )}
           </div>
           
           {showMenu && (
@@ -175,32 +195,17 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                     }}
                   />
                   <div className="absolute right-0 top-8 z-20 w-52 bg-white dark:bg-dark-surface rounded-xl shadow-xl border border-gray-100 dark:border-dark-border py-1.5 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
-                    
                     <button 
                       onClick={(e) => {
                          e.stopPropagation();
-                         console.log("Open collection");
                          setIsMenuOpen(false);
                          onClick();
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
                     >
                        <Eye className="w-4 h-4" />
-                       Open Collection
+                       View Collection
                     </button>
-
-                    <button 
-                      onClick={(e) => {
-                         e.stopPropagation();
-                         console.log("Review collection");
-                         setIsMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
-                    >
-                       <PlayCircle className="w-4 h-4" />
-                       Review This Collection
-                    </button>
-                    
                     <button 
                       onClick={(e) => {
                          e.stopPropagation();
@@ -212,9 +217,7 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
                        <Pencil className="w-4 h-4" />
                        Edit Collection
                     </button>
-
                     <div className="h-px bg-gray-100 dark:bg-dark-border my-1" />
-
                     <button 
                       onClick={(e) => {
                          e.stopPropagation();
@@ -235,20 +238,23 @@ const CollectionCard: React.FC<CollectionCardProps> = ({
 
         {/* Stats Row */}
         <div className="space-y-2">
-          <div className="flex justify-between text-xs font-medium text-gray-500 dark:text-dark-text-sec">
-            <span>{stats.notMastered} not mastered</span>
-            <span className={stats.percentage === 100 ? 'text-green-600 dark:text-green-400' : ''}>
-              {stats.percentage}% mastered
-            </span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-gray-500 dark:text-dark-text-sec">
+             <span className={`${stats.due > 0 ? 'text-red-500 font-bold' : ''}`}>
+               {stats.due} due
+             </span>
+             <span>•</span>
+             <span className="text-orange-500">{stats.learning} learning</span>
+             <span>•</span>
+             <span className="text-green-500">{stats.mature} mature</span>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar (Maturity) */}
           <div className="h-1.5 w-full bg-gray-100 dark:bg-dark-bg rounded-full overflow-hidden">
             <div 
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{ 
-                width: `${stats.percentage}%`,
-                backgroundColor: collection.color === '#6B7280' ? '#5B7FFF' : collection.color 
+                width: `${stats.maturePercentage}%`,
+                backgroundColor: collection.color === '#6B7280' ? '#10B981' : collection.color 
               }}
             />
           </div>

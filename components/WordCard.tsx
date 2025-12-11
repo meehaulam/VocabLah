@@ -1,65 +1,103 @@
 import React from 'react';
 import { VocabWord } from '../types';
-import { Trash2, CheckCircle2, Circle, Pencil } from 'lucide-react';
+import { Trash2, Pencil, Calendar, Clock, Sprout, TreeDeciduous, BookOpen } from 'lucide-react';
+import { isCardDue, getSRSStage } from '../utils/srs';
+import { getDaysDifference, getTodayDate } from '../utils/date';
 
 interface WordCardProps {
   word: VocabWord;
   onEdit: () => void;
   onDelete: (id: number) => void;
-  onToggleMastered: (id: number) => void;
+  onToggleMastered: (id: number) => void; // Kept for compatibility but might not be used in SRS view
 }
 
-export const WordCard: React.FC<WordCardProps> = ({ word, onEdit, onDelete, onToggleMastered }) => {
+export const WordCard: React.FC<WordCardProps> = ({ word, onEdit, onDelete }) => {
+  const isDue = isCardDue(word);
+  const stage = getSRSStage(word);
+  const today = getTodayDate();
+  
+  let statusColor = '';
+  let statusText = '';
+  let statusIcon = null;
+
+  // Status Indicator Logic
+  if (isDue) {
+    statusColor = 'text-red-500 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30';
+    statusText = 'Due today';
+    statusIcon = <Calendar className="w-3.5 h-3.5" />;
+  } else {
+    const daysUntil = getDaysDifference(today, word.nextReviewDate);
+    statusColor = 'text-green-600 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30';
+    statusText = `Due in ${daysUntil} days`;
+    statusIcon = <Clock className="w-3.5 h-3.5" />;
+  }
+
+  // Stage Indicator Logic
+  let stageIcon = null;
+  let stageColorClass = '';
+  
+  switch(stage.type) {
+    case 'new': 
+      stageIcon = <div className="text-base">🆕</div>;
+      stageColorClass = 'text-blue-500';
+      break;
+    case 'learning':
+      stageIcon = <BookOpen className="w-3.5 h-3.5" />;
+      stageColorClass = 'text-orange-500';
+      break;
+    case 'young':
+      stageIcon = <Sprout className="w-3.5 h-3.5" />;
+      stageColorClass = 'text-lime-600';
+      break;
+    case 'mature':
+      stageIcon = <TreeDeciduous className="w-3.5 h-3.5" />;
+      stageColorClass = 'text-green-600';
+      break;
+  }
+
   return (
     <div className={`
       group relative rounded-xl p-4 shadow-sm border transition-all duration-200
-      ${word.mastered 
-        ? 'border-green-200 bg-green-50/40 dark:bg-green-900/10 dark:border-green-900/30' 
-        : 'bg-white dark:bg-dark-surface border-gray-100 dark:border-dark-border hover:border-blue-200 dark:hover:border-primary/30 hover:shadow-md'}
+      bg-white dark:bg-dark-surface border-gray-100 dark:border-dark-border hover:border-blue-200 dark:hover:border-primary/30 hover:shadow-md
     `}>
       <div className="flex items-start justify-between gap-3">
         
-        <div className="flex-1 min-w-0 pt-1">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            <h3 className={`text-lg font-bold leading-tight ${word.mastered ? 'text-green-800 dark:text-green-400' : 'text-dark dark:text-dark-text'}`}>
-              {word.word}
-            </h3>
-            {word.mastered && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
-                Mastered
-              </span>
-            )}
+        <div className="flex-1 min-w-0">
+          
+          {/* Header with Word and Due Status */}
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+             <div className="flex items-center gap-2">
+                 {/* Status Icon Only on small visual */}
+                 <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs ${isDue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400'}`}>
+                    {isDue ? '📅' : '✅'}
+                 </span>
+                 <h3 className="text-lg font-bold leading-tight text-dark dark:text-dark-text">
+                   {word.word}
+                 </h3>
+             </div>
           </div>
-          <p className={`text-sm sm:text-base leading-relaxed ${word.mastered ? 'text-gray-500 dark:text-gray-400' : 'text-gray-600 dark:text-dark-text-sec'}`}>
+
+          <p className="text-sm sm:text-base leading-relaxed text-gray-600 dark:text-dark-text-sec mb-3 pl-8">
             {word.meaning}
           </p>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 font-medium">
-            Added {new Date(word.createdAt).toLocaleDateString()}
-          </p>
+
+          {/* Footer Info: Status & Stage */}
+          <div className="flex flex-wrap items-center gap-3 pl-8">
+             <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border ${statusColor}`}>
+                {statusIcon}
+                <span>{statusText}</span>
+             </div>
+             
+             <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className={stageColorClass}>{stageIcon}</span>
+                <span>{stage.label} ({word.interval}d)</span>
+             </div>
+          </div>
+
         </div>
 
-        <div className="flex flex-col gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleMastered(word.id);
-            }}
-            title={word.mastered ? "Mark as unlearned" : "Mark as mastered"}
-            className={`
-              relative p-2 rounded-lg transition-all duration-200 border
-              ${word.mastered 
-                ? 'text-green-600 bg-green-100 border-green-200 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/40 shadow-sm' 
-                : 'text-gray-400 bg-white dark:bg-dark-bg border-gray-100 dark:border-dark-border hover:border-primary/30 hover:bg-blue-50 dark:hover:bg-primary/10 hover:text-primary'}
-            `}
-          >
-            {word.mastered ? (
-              <CheckCircle2 className="w-6 h-6" />
-            ) : (
-              <Circle className="w-6 h-6" />
-            )}
-          </button>
-
+        {/* Actions */}
+        <div className="flex flex-col gap-1 shrink-0 ml-1">
           <button
             type="button"
             onClick={(e) => {
@@ -67,9 +105,9 @@ export const WordCard: React.FC<WordCardProps> = ({ word, onEdit, onDelete, onTo
               onEdit();
             }}
             title="Edit word"
-             className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-bg hover:text-primary dark:hover:text-primary transition-colors duration-200 group-hover:opacity-100"
+             className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-bg hover:text-primary dark:hover:text-primary transition-colors duration-200"
           >
-            <Pencil className="w-5 h-5" />
+            <Pencil className="w-4 h-4" />
           </button>
           
           <button
@@ -79,9 +117,9 @@ export const WordCard: React.FC<WordCardProps> = ({ word, onEdit, onDelete, onTo
               onDelete(word.id);
             }}
             title="Delete word"
-            className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors duration-200 group-hover:opacity-100"
+            className="p-2 rounded-lg text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 transition-colors duration-200"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
 

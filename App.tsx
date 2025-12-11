@@ -13,13 +13,12 @@ import { CreateCollectionModal } from './components/CreateCollectionModal';
 import { EditCollectionModal } from './components/EditCollectionModal';
 import { DeleteCollectionModal } from './components/DeleteCollectionModal';
 import { saveCollections } from './utils/storage';
+import { getTodayDate, addDays } from './utils/date';
 
 const LOCAL_STORAGE_KEY = "vocab_lah_words";
 const COLLECTIONS_STORAGE_KEY = "vocab_lah_collections";
 const THEME_STORAGE_KEY = "vocab_lah_theme";
 const SESSION_LIMIT_KEY = "vocab_lah_session_limit";
-const STREAK_KEY = "vocab_lah_streak";
-const LAST_ACTIVITY_KEY = "vocab_lah_last_activity";
 
 const App: React.FC = () => {
   const [words, setWords] = useState<VocabWord[]>([]);
@@ -48,9 +47,6 @@ const App: React.FC = () => {
   const [deletingCollection, setDeletingCollection] = useState<Collection | null>(null);
   const [lastCreatedCollectionId, setLastCreatedCollectionId] = useState<string | null>(null);
   
-  // Streak State
-  const [streak, setStreak] = useState(0);
-
   // Initialize Data (Words & Collections)
   useEffect(() => {
     const initializeData = () => {
@@ -101,19 +97,42 @@ const App: React.FC = () => {
         if (storedWords) {
           const rawWords = JSON.parse(storedWords);
           let migrationNeeded = false;
+          const today = getTodayDate();
           
           const migratedWords = rawWords.map((w: any) => {
-             // Check if collectionId is missing
-             if (!('collectionId' in w)) {
+             let word = { ...w };
+
+             // Migration for collectionId
+             if (!('collectionId' in word)) {
                migrationNeeded = true;
-               return { ...w, collectionId: null };
+               word.collectionId = null;
              }
-             return w as VocabWord;
+
+             // Migration for SRS fields
+             if (!('easeFactor' in word)) {
+               migrationNeeded = true;
+               word.easeFactor = 2.5;
+               word.repetitions = 0;
+               word.lastReviewDate = null;
+               
+               if (word.mastered) {
+                 // Assume mastered words are mature
+                 word.interval = 21;
+                 word.repetitions = 3;
+                 word.nextReviewDate = addDays(today, 21);
+               } else {
+                 // New/unmastered words
+                 word.interval = 0;
+                 word.nextReviewDate = today;
+               }
+             }
+
+             return word as VocabWord;
           });
 
           if (migrationNeeded) {
             localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(migratedWords));
-            console.log("Migrated words to include collectionId structure");
+            console.log("Migrated words to include collectionId and SRS structure");
           }
           
           setWords(migratedWords);
@@ -127,6 +146,12 @@ const App: React.FC = () => {
     };
 
     initializeData();
+  }, []);
+
+  // Cleanup Streak Data (One-time)
+  useEffect(() => {
+    localStorage.removeItem("vocab_lah_streak");
+    localStorage.removeItem("vocab_lah_last_activity");
   }, []);
 
   // Load Settings from LocalStorage
@@ -170,36 +195,6 @@ const App: React.FC = () => {
     return () => mediaQuery.removeEventListener('change', handler);
   }, [themeMode]);
 
-  // Calculate Streak on mount
-  useEffect(() => {
-    const today = new Date().toDateString();
-    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
-    const storedStreak = parseInt(localStorage.getItem(STREAK_KEY) || '0');
-
-    if (lastActivity !== today) {
-       const yesterday = new Date();
-       yesterday.setDate(yesterday.getDate() - 1);
-       
-       if (lastActivity === yesterday.toDateString()) {
-         // Consecutive day
-         const newStreak = storedStreak + 1;
-         setStreak(newStreak);
-         localStorage.setItem(STREAK_KEY, newStreak.toString());
-       } else if (!lastActivity) {
-         // First time
-         setStreak(1);
-         localStorage.setItem(STREAK_KEY, '1');
-       } else {
-         // Streak broken (or > 1 day gap), reset to 1 (active today)
-         setStreak(1);
-         localStorage.setItem(STREAK_KEY, '1');
-       }
-       localStorage.setItem(LAST_ACTIVITY_KEY, today);
-    } else {
-      setStreak(storedStreak);
-    }
-  }, []);
-
   // Save words to LocalStorage whenever words change
   useEffect(() => {
     if (isLoaded) {
@@ -233,8 +228,6 @@ const App: React.FC = () => {
   const handleResetData = () => {
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     localStorage.removeItem(THEME_STORAGE_KEY);
-    localStorage.removeItem(STREAK_KEY);
-    localStorage.removeItem(LAST_ACTIVITY_KEY);
     localStorage.removeItem(SESSION_LIMIT_KEY);
     localStorage.removeItem(COLLECTIONS_STORAGE_KEY);
     
@@ -252,7 +245,6 @@ const App: React.FC = () => {
     };
     setCollections([defaultCollection]);
     
-    setStreak(1);
     setThemeMode('auto');
     setSessionLimit(20);
     setCurrentView('dashboard');
@@ -268,6 +260,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleResetSRSData = () => {
+    const today = getTodayDate();
+    setWords(prev => prev.map(word => ({
+      ...word,
+      easeFactor: 2.5,
+      interval: 0,
+      repetitions: 0,
+      nextReviewDate: today,
+      lastReviewDate: null,
+      mastered: false
+    })));
+  };
+
   const handleOpenAddModal = (collectionId: string | null = null) => {
     setAddModalInitialCollectionId(collectionId);
     setIsAddModalOpen(true);
@@ -281,9 +286,21 @@ const App: React.FC = () => {
       mastered: false,
       createdAt: Date.now(),
       collectionId: collectionId,
+      // SRS Defaults
+      easeFactor: 2.5,
+      interval: 0,
+      repetitions: 0,
+      nextReviewDate: getTodayDate(),
+      lastReviewDate: null
     };
     setWords((prev) => [newWord, ...prev]);
     setIsAddModalOpen(false);
+  };
+
+  const handleUpdateWord = (updatedWord: VocabWord) => {
+    setWords((prev) => 
+      prev.map(w => w.id === updatedWord.id ? updatedWord : w)
+    );
   };
 
   const handleCreateCollection = (name: string, icon: string, color: string) => {
@@ -367,7 +384,6 @@ const App: React.FC = () => {
 
   const handleGoToWordBank = (filter: 'all' | 'learning' | 'mastered' = 'all') => {
     setWordBankFilter(filter);
-    // TODO: Link this to specific collection or view in future
     setCurrentView('wordbank');
   };
 
@@ -383,7 +399,6 @@ const App: React.FC = () => {
           <div className="h-full overflow-y-auto custom-scrollbar">
             <Dashboard 
               words={words} 
-              streak={streak}
               onStartReview={() => handleStartReview(null)}
               onAddWord={() => handleOpenAddModal()}
               onGoToWordBank={handleGoToWordBank}
@@ -446,7 +461,7 @@ const App: React.FC = () => {
             collections={collections}
             sessionLimit={sessionLimit}
             initialCollectionId={reviewTargetCollectionId}
-            onToggleMastered={handleToggleMastered}
+            onUpdateWord={handleUpdateWord}
             onBackToDashboard={() => {
               setCurrentView('dashboard');
               setReviewTargetCollectionId(null);
@@ -462,6 +477,8 @@ const App: React.FC = () => {
              setSessionLimit={handleSessionLimitChange}
              onBack={handleBackFromSettings}
              onResetData={handleResetData}
+             words={words}
+             onResetSRSData={handleResetSRSData}
           />
         );
       default:

@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Collection, VocabWord } from '../types';
 import { WordList } from './WordList';
 import { EditWordModal } from './EditWordModal';
-import { ArrowLeft, Search, X, Plus, MoreVertical, PlayCircle, Pencil, Trash2, ArrowUpDown, Filter } from 'lucide-react';
+import { ArrowLeft, Search, X, Plus, MoreVertical, PlayCircle, Pencil, Trash2, ArrowUpDown, Calendar, CheckCircle2 } from 'lucide-react';
+import { isCardDue, getSRSStage } from '../utils/srs';
 
 interface CollectionDetailViewProps {
   collection: Collection;
@@ -20,7 +21,8 @@ interface CollectionDetailViewProps {
   lastCreatedCollectionId: string | null;
 }
 
-type SortOption = 'newest' | 'oldest' | 'a-z' | 'z-a' | 'not-mastered';
+type SortOption = 'due-first' | 'newest' | 'oldest' | 'a-z' | 'z-a';
+type FilterOption = 'all' | 'due' | 'learning' | 'mature';
 
 export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
   collection,
@@ -39,7 +41,8 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  const [sortOption, setSortOption] = useState<SortOption>('due-first');
+  const [filterOption, setFilterOption] = useState<FilterOption>('all');
   const [editingWord, setEditingWord] = useState<VocabWord | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -59,9 +62,27 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
     return words.filter(w => w.collectionId === collection.id);
   }, [words, collection.id]);
 
-  // Apply search and sort
+  // Calculate detailed stats
+  const stats = useMemo(() => {
+    const total = collectionWords.length;
+    const due = collectionWords.filter(isCardDue).length;
+    const learning = collectionWords.filter(w => w.repetitions > 0 && w.interval < 21).length;
+    const mature = collectionWords.filter(w => w.interval >= 21).length;
+    return { total, due, learning, mature };
+  }, [collectionWords]);
+
+  // Apply search, filter and sort
   const displayWords = useMemo(() => {
     let result = [...collectionWords];
+
+    // Filter
+    if (filterOption === 'due') {
+      result = result.filter(isCardDue);
+    } else if (filterOption === 'learning') {
+      result = result.filter(w => w.repetitions > 0 && w.interval < 21);
+    } else if (filterOption === 'mature') {
+      result = result.filter(w => w.interval >= 21);
+    }
 
     // Search
     if (debouncedSearchQuery.trim()) {
@@ -74,23 +95,23 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
     // Sort
     result.sort((a, b) => {
       switch (sortOption) {
+        case 'due-first':
+          const aDue = isCardDue(a);
+          const bDue = isCardDue(b);
+          if (aDue && !bDue) return -1;
+          if (!aDue && bDue) return 1;
+          // If both due or not due, sort by nextReviewDate
+          return a.nextReviewDate.localeCompare(b.nextReviewDate);
         case 'newest': return b.createdAt - a.createdAt;
         case 'oldest': return a.createdAt - b.createdAt;
         case 'a-z': return a.word.localeCompare(b.word);
         case 'z-a': return b.word.localeCompare(a.word);
-        case 'not-mastered':
-          // Sort false (not mastered) before true (mastered)
-          if (a.mastered === b.mastered) return b.createdAt - a.createdAt; // secondary sort by newest
-          return a.mastered ? 1 : -1;
         default: return b.createdAt - a.createdAt;
       }
     });
 
     return result;
-  }, [collectionWords, debouncedSearchQuery, sortOption]);
-
-  const totalCount = collectionWords.length;
-  const notMasteredCount = collectionWords.filter(w => !w.mastered).length;
+  }, [collectionWords, debouncedSearchQuery, sortOption, filterOption]);
 
   const handleSaveEdit = (id: number, word: string, meaning: string, collectionId: string | null) => {
     onEditWord(id, word, meaning, collectionId);
@@ -123,7 +144,7 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
                <MoreVertical className="w-6 h-6" />
              </button>
           ) : (
-            <div className="w-10"></div> // Spacer to keep title centered-ish
+            <div className="w-10"></div>
           )}
 
           {/* Menu Dropdown */}
@@ -160,29 +181,35 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
 
       <div className="flex-1 overflow-y-auto px-4 pb-4 pt-2 custom-scrollbar">
         
-        {/* Stats Row */}
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-dark-text-sec mb-4 px-1">
-          <span className="font-medium text-dark dark:text-dark-text">{totalCount}</span> words
-          <span>•</span>
-          <span className="font-medium text-orange-500">{notMasteredCount}</span> not mastered
+        {/* Header SRS Stats */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm text-gray-500 dark:text-dark-text-sec mb-4 px-1">
+          <span className="font-medium text-dark dark:text-dark-text">{stats.total} words</span>
+          <span className="text-gray-300 dark:text-gray-600">•</span>
+          <span className={`${stats.due > 0 ? 'text-red-500 font-bold' : ''}`}>
+             {stats.due > 0 ? `${stats.due} due today` : '0 due today'}
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">•</span>
+          <span className="text-orange-500">{stats.learning} learning</span>
+          <span className="text-gray-300 dark:text-gray-600">•</span>
+          <span className="text-green-500">{stats.mature} mature</span>
         </div>
 
         {/* Action Buttons */}
-        <div className="space-y-3 mb-6">
-          {notMasteredCount > 0 && (
+        <div className="space-y-3 mb-4">
+          {stats.due > 0 && (
             <button
               onClick={onReview}
               className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
             >
               <PlayCircle className="w-5 h-5 fill-current" />
-              Review {collection.name} ({notMasteredCount})
+              Review {collection.name} ({stats.due} due)
             </button>
           )}
 
           <button
             onClick={() => onAddWord(collection.id === 'all' ? null : collection.id)}
             className={`w-full flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-xl border-2 transition-all active:scale-[0.98] ${
-               notMasteredCount > 0 
+               stats.due > 0 
                ? 'bg-transparent border-gray-200 dark:border-dark-border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-surface'
                : 'bg-primary hover:bg-primary-hover border-transparent text-white shadow-lg shadow-blue-500/20'
             }`}
@@ -190,6 +217,50 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
             <Plus className="w-5 h-5" />
             Add Word to {collection.name}
           </button>
+        </div>
+
+        {/* Filter Chips */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
+           <button
+             onClick={() => setFilterOption('all')}
+             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
+               filterOption === 'all'
+                 ? 'bg-gray-800 text-white border-gray-800 dark:bg-gray-200 dark:text-dark-bg'
+                 : 'bg-white dark:bg-dark-surface text-gray-600 dark:text-gray-300 border-gray-200 dark:border-dark-border'
+             }`}
+           >
+             📖 All ({stats.total})
+           </button>
+           <button
+             onClick={() => setFilterOption('due')}
+             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
+               filterOption === 'due'
+                 ? 'bg-red-500 text-white border-red-500'
+                 : 'bg-white dark:bg-dark-surface text-gray-600 dark:text-gray-300 border-gray-200 dark:border-dark-border'
+             }`}
+           >
+             📅 Due Today ({stats.due})
+           </button>
+           <button
+             onClick={() => setFilterOption('learning')}
+             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
+               filterOption === 'learning'
+                 ? 'bg-orange-500 text-white border-orange-500'
+                 : 'bg-white dark:bg-dark-surface text-gray-600 dark:text-gray-300 border-gray-200 dark:border-dark-border'
+             }`}
+           >
+             📚 Learning ({stats.learning})
+           </button>
+           <button
+             onClick={() => setFilterOption('mature')}
+             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${
+               filterOption === 'mature'
+                 ? 'bg-green-500 text-white border-green-500'
+                 : 'bg-white dark:bg-dark-surface text-gray-600 dark:text-gray-300 border-gray-200 dark:border-dark-border'
+             }`}
+           >
+             🌳 Mature ({stats.mature})
+           </button>
         </div>
 
         {/* Search & Sort Bar */}
@@ -203,7 +274,7 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
                 placeholder="Search words..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-9 py-2.5 bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg text-sm text-dark dark:text-dark-text placeholder:text-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
+                className="w-full pl-9 pr-9 py-2 bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg text-sm text-dark dark:text-dark-text placeholder:text-gray-400 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all shadow-sm"
               />
               {searchQuery && (
                 <button
@@ -224,11 +295,11 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
                   className="h-full w-full pl-8 pr-4 appearance-none bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg text-xs font-medium text-gray-600 dark:text-dark-text focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm transition-all"
                >
+                  <option value="due-first">Due First</option>
                   <option value="newest">Newest</option>
                   <option value="oldest">Oldest</option>
                   <option value="a-z">A-Z</option>
                   <option value="z-a">Z-A</option>
-                  <option value="not-mastered">Not Mastered</option>
                </select>
             </div>
         </div>
@@ -255,9 +326,24 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
              </div>
            ) : displayWords.length === 0 ? (
              <div className="flex flex-col items-center justify-center py-16 text-center text-gray-500 dark:text-dark-text-sec">
-                <Search className="w-8 h-8 mb-3 opacity-50" />
-                <p>No matches for "{searchQuery}"</p>
-                <button onClick={() => setSearchQuery('')} className="mt-2 text-primary hover:underline text-sm">Clear Search</button>
+               {filterOption === 'due' ? (
+                 <>
+                   <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
+                      <CheckCircle2 className="w-8 h-8 text-green-500" />
+                   </div>
+                   <h3 className="text-lg font-bold text-dark dark:text-dark-text">All cards reviewed!</h3>
+                   <p className="max-w-[200px] mt-2">No cards due in this collection right now.</p>
+                   <button onClick={() => setFilterOption('all')} className="mt-4 text-primary font-bold hover:underline">
+                      View all cards
+                   </button>
+                 </>
+               ) : (
+                 <>
+                   <Search className="w-8 h-8 mb-3 opacity-50" />
+                   <p>No matches found.</p>
+                   <button onClick={() => { setSearchQuery(''); setFilterOption('all'); }} className="mt-2 text-primary hover:underline text-sm">Clear filters</button>
+                 </>
+               )}
              </div>
            ) : (
              <WordList 
