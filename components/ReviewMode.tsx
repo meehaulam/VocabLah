@@ -74,12 +74,12 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   const nextDueInfo = useMemo(() => getNextDueInfo(words), [words]);
 
   // Handle Setup Start
-  const handleStartSession = () => {
+  const handleStartSession = (practiceMode = false) => {
     const srsSettings = getSRSSettings();
     const dailyCounts = getDailyCounts();
 
-    // 1. Base Filter (Due cards only)
-    let filteredWords = words.filter(isCardDue);
+    // 1. Base Filter - Practice mode uses ALL cards, normal mode uses only DUE cards
+    let filteredWords = practiceMode ? words : words.filter(isCardDue);
 
     if (selectedCollectionId && selectedCollectionId !== 'all') {
       filteredWords = filteredWords.filter(w => w.collectionId === selectedCollectionId);
@@ -89,43 +89,59 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
       setActiveCollectionName('All Collections');
     }
 
-    // 2. Apply Daily Limits
-    const newCards = filteredWords.filter(w => w.repetitions === 0);
-    const reviewCards = filteredWords.filter(w => w.repetitions > 0);
-
-    const availableNewSlots = Math.max(0, srsSettings.newCardsLimit - dailyCounts.newCards);
-    const availableReviewSlots = Math.max(0, srsSettings.maxReviewsLimit - dailyCounts.reviews);
-
+    // 2. Apply Daily Limits (only for normal mode, not practice mode)
     let allowedCards: VocabWord[] = [];
-    
-    if (availableReviewSlots <= 0) {
-        setLimitWarning("You've reached your daily review limit!");
-        return; 
+
+    if (practiceMode) {
+      // Practice mode: use all cards (ignore limits)
+      allowedCards = filteredWords;
+
+      // Apply session limit if set
+      if (sessionLimit !== 'all') {
+        allowedCards = allowedCards.slice(0, sessionLimit);
+      }
+    } else {
+      // Normal mode: apply daily limits
+      const newCards = filteredWords.filter(w => w.repetitions === 0);
+      const reviewCards = filteredWords.filter(w => w.repetitions > 0);
+
+      const availableNewSlots = Math.max(0, srsSettings.newCardsLimit - dailyCounts.newCards);
+      const availableReviewSlots = Math.max(0, srsSettings.maxReviewsLimit - dailyCounts.reviews);
+
+      if (availableReviewSlots <= 0) {
+          setLimitWarning("You've reached your daily review limit!");
+          return;
+      }
+
+      const limitedReviews = reviewCards.slice(0, availableReviewSlots);
+      const spaceLeftForNew = Math.max(0, availableReviewSlots - limitedReviews.length);
+      const finalNewCards = newCards.slice(0, Math.min(availableNewSlots, spaceLeftForNew));
+
+      allowedCards = [...limitedReviews, ...finalNewCards];
+
+      if (sessionLimit !== 'all') {
+        allowedCards = allowedCards.slice(0, sessionLimit);
+      }
+
+      if (allowedCards.length === 0 && filteredWords.length > 0) {
+          setLimitWarning("Daily limits reached for today! Come back tomorrow.");
+          return;
+      }
     }
 
-    const limitedReviews = reviewCards.slice(0, availableReviewSlots);
-    const spaceLeftForNew = Math.max(0, availableReviewSlots - limitedReviews.length);
-    const finalNewCards = newCards.slice(0, Math.min(availableNewSlots, spaceLeftForNew));
-
-    allowedCards = [...limitedReviews, ...finalNewCards];
-    
-    if (sessionLimit !== 'all') {
-      allowedCards = allowedCards.slice(0, sessionLimit);
-    }
-
-    if (allowedCards.length === 0 && filteredWords.length > 0) {
-        setLimitWarning("Daily limits reached for today! Come back tomorrow.");
-        return;
+    if (allowedCards.length === 0) {
+      setLimitWarning("No cards available!");
+      return;
     }
 
     setLimitWarning(null);
 
     const sessionWordsCopy = allowedCards.map(w => ({ ...w }));
     setSessionWords(sessionWordsCopy);
-    setIsPracticeMode(false);
+    setIsPracticeMode(practiceMode);
     setIsSetupComplete(true);
     setSessionStats({ again: 0, hard: 0, good: 0, easy: 0 });
-    
+
     const initialBatch = sessionWordsCopy.map(w => w.id);
     setCurrentBatchIds(initialBatch);
     setCompletedIds(new Set());
@@ -133,6 +149,10 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
     setCurrentIndex(0);
     setIsBatchComplete(sessionWordsCopy.length === 0);
     setIsFlipped(false);
+  };
+
+  const handlePracticeAnyway = () => {
+    handleStartSession(true);
   };
 
   const handleReviewAgain = () => {
@@ -255,16 +275,15 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
               >
                 Back to Dashboard
               </button>
-              
-              <button
-                 onClick={() => {
-                   setIsPracticeMode(true);
-                   handleStartSession(); 
-                 }}
-                 className="text-primary font-semibold hover:underline text-sm"
-              >
-                Practice anyway?
-              </button>
+
+              {words.length > 0 && (
+                <button
+                   onClick={handlePracticeAnyway}
+                   className="text-primary font-semibold hover:underline text-sm"
+                >
+                  Practice anyway? ({words.length} cards available)
+                </button>
+              )}
            </div>
         </div>
       );
@@ -332,34 +351,50 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   // --- Render: Summary Screen ---
   if (isBatchComplete) {
     const { tomorrowCount } = getNextReviewsForecast();
-    
+
     return (
       <div className="h-full flex flex-col p-6 text-center animate-in zoom-in-95 duration-500">
          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
             <div className="w-24 h-24 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-2 animate-bounce">
                <Check className="w-12 h-12 text-green-600 dark:text-green-400" strokeWidth={3} />
             </div>
-            
-            <h2 className="text-3xl font-bold text-dark dark:text-dark-text">Session Complete!</h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-               You reviewed <span className="font-bold text-dark dark:text-dark-text">{completedIds.size}</span> cards.
-            </p>
+
+            {isPracticeMode ? (
+              <>
+                <h2 className="text-3xl font-bold text-dark dark:text-dark-text">Practice Session Complete!</h2>
+                <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                   You reviewed <span className="font-bold text-dark dark:text-dark-text">{completedIds.size}</span> cards for extra practice.
+                </p>
+                <p className="text-sm text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-lg border border-purple-200 dark:border-purple-800/30 max-w-xs">
+                   💡 These reviews didn't affect your schedule
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-bold text-dark dark:text-dark-text">Session Complete!</h2>
+                <p className="text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+                   You reviewed <span className="font-bold text-dark dark:text-dark-text">{completedIds.size}</span> cards.
+                </p>
+              </>
+            )}
 
             <div className="grid grid-cols-2 gap-4 w-full max-w-xs mt-4">
                <div className="bg-gray-50 dark:bg-dark-surface p-4 rounded-xl border border-gray-100 dark:border-dark-border">
                   <div className="text-2xl font-bold text-orange-500">{sessionStats.hard + sessionStats.again}</div>
-                  <div className="text-xs font-semibold text-gray-400 uppercase">Struggled</div>
+                  <div className="text-xs font-semibold text-gray-400 uppercase">{isPracticeMode ? 'To Review More' : 'Struggled'}</div>
                </div>
                <div className="bg-gray-50 dark:bg-dark-surface p-4 rounded-xl border border-gray-100 dark:border-dark-border">
                   <div className="text-2xl font-bold text-green-500">{sessionStats.good + sessionStats.easy}</div>
-                  <div className="text-xs font-semibold text-gray-400 uppercase">Mastered</div>
+                  <div className="text-xs font-semibold text-gray-400 uppercase">{isPracticeMode ? 'Doing Great!' : 'Mastered'}</div>
                </div>
             </div>
-            
-            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 px-4 py-2 rounded-full">
-               <History className="w-4 h-4" />
-               <span>{tomorrowCount} cards due tomorrow</span>
-            </div>
+
+            {!isPracticeMode && (
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/10 px-4 py-2 rounded-full">
+                 <History className="w-4 h-4" />
+                 <span>{tomorrowCount} cards due tomorrow</span>
+              </div>
+            )}
          </div>
 
          <div className="flex flex-col gap-3 w-full max-w-xs mx-auto mb-8">
@@ -374,7 +409,7 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
                className="w-full bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border text-gray-700 dark:text-gray-200 font-bold py-3.5 rounded-xl transition-all hover:bg-gray-50 dark:hover:bg-dark-bg"
             >
                <div className="flex items-center justify-center gap-2">
-                 <RotateCw className="w-4 h-4" /> Review These Again
+                 <RotateCw className="w-4 h-4" /> {isPracticeMode ? 'Practice More' : 'Review These Again'}
                </div>
             </button>
          </div>
@@ -408,6 +443,16 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
               {currentIndex + 1} / {currentBatchIds.length}
             </div>
         </div>
+
+        {/* Practice Mode Banner */}
+        {isPracticeMode && (
+          <div className="mx-4 mb-2 px-3 py-2 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/30 rounded-lg flex items-center gap-2 animate-in slide-in-from-top duration-300">
+            <span className="text-lg">⭐</span>
+            <p className="text-xs font-semibold text-purple-700 dark:text-purple-300">
+              Practice Mode - Extra review (doesn't affect scheduling)
+            </p>
+          </div>
+        )}
 
         {/* Scrollable Content Area */}
         <div className="review-content flex-1 px-4">
