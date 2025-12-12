@@ -114,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const bannerMessage = `You have ${dueCount} cards due today. ${motivationalMessage}`;
 
   return (
-    <div className="flex flex-col h-full gap-6 p-1 animate-in fade-in duration-500">
+    <div className="dashboard-container flex flex-col h-full gap-6 p-1 animate-in fade-in duration-500">
       
       {/* Reminder Banner */}
       {isBannerVisible && (
@@ -173,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                )}
              </div>
            ) : (
-             <div className="space-y-1">
+             <div className="no-cards-message space-y-1">
                <h2 className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-500 flex items-center gap-2 justify-center">
                   <span>No cards due!</span>
                   <span className="text-2xl">🎉</span>

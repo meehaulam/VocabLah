@@ -14,42 +14,42 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentView, onViewChange 
       <div className="grid grid-cols-4 h-full max-w-2xl mx-auto">
         <button
           onClick={() => onViewChange('dashboard')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+          className={`nav-item ${currentView === 'dashboard' ? 'active' : ''} flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
             currentView === 'dashboard' ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300'
           }`}
         >
-          <Home className={`w-6 h-6 md:w-7 md:h-7 ${currentView === 'dashboard' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-          <span className="text-[10px] md:text-xs font-medium">Dashboard</span>
+          <Home className={`nav-icon w-6 h-6 md:w-7 md:h-7 ${currentView === 'dashboard' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+          <span className="nav-label text-[10px] md:text-xs font-medium">Dashboard</span>
         </button>
 
         <button
           onClick={() => onViewChange('collections')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+          className={`nav-item ${['collections', 'wordbank', 'collection-detail'].includes(currentView) ? 'active' : ''} flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
             ['collections', 'wordbank', 'collection-detail'].includes(currentView) ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300'
           }`}
         >
-          <Folder className={`w-6 h-6 md:w-7 md:h-7 ${['collections', 'wordbank', 'collection-detail'].includes(currentView) ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-          <span className="text-[10px] md:text-xs font-medium">Collections</span>
+          <Folder className={`nav-icon w-6 h-6 md:w-7 md:h-7 ${['collections', 'wordbank', 'collection-detail'].includes(currentView) ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+          <span className="nav-label text-[10px] md:text-xs font-medium">Collections</span>
         </button>
 
         <button
           onClick={() => onViewChange('review')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+          className={`nav-item ${currentView === 'review' ? 'active' : ''} flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
             currentView === 'review' ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300'
           }`}
         >
-          <Layers className={`w-6 h-6 md:w-7 md:h-7 ${currentView === 'review' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-          <span className="text-[10px] md:text-xs font-medium">Review</span>
+          <Layers className={`nav-icon w-6 h-6 md:w-7 md:h-7 ${currentView === 'review' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+          <span className="nav-label text-[10px] md:text-xs font-medium">Review</span>
         </button>
 
         <button
           onClick={() => onViewChange('settings')}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
+          className={`nav-item ${currentView === 'settings' ? 'active' : ''} flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors duration-200 ${
             currentView === 'settings' ? 'text-primary' : 'text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-300'
           }`}
         >
-          <Settings className={`w-6 h-6 md:w-7 md:h-7 ${currentView === 'settings' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-          <span className="text-[10px] md:text-xs font-medium">Settings</span>
+          <Settings className={`nav-icon w-6 h-6 md:w-7 md:h-7 ${currentView === 'settings' ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+          <span className="nav-label text-[10px] md:text-xs font-medium">Settings</span>
         </button>
       </div>
     </nav>

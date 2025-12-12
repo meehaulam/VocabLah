@@ -329,10 +329,51 @@
           height: 18px;
           font-size: 11px;
         }
-        
+
         .difficulty-buttons-container {
            bottom: 70px;
         }
+      }
+
+      /* Dashboard Container Mobile Padding */
+      @media (max-width: 767px) {
+        .dashboard-container {
+          padding-top: 100px; /* Space for browser bar */
+          padding-bottom: 140px; /* Space for bottom nav */
+        }
+      }
+
+      /* Active Navigation Item Styles */
+      .nav-item.active {
+        color: #A855F7;
+      }
+
+      .nav-item.active .nav-icon {
+        color: #A855F7;
+        transform: scale(1.1);
+      }
+
+      .nav-item.active .nav-label {
+        color: #A855F7;
+        font-weight: 600;
+      }
+
+      /* Improved "All Caught Up" Visibility */
+      .no-cards-message {
+        padding: 32px 20px;
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .no-cards-message h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: #1F2937;
+        margin-bottom: 8px;
+      }
+
+      html.dark .no-cards-message h2 {
+        color: #F9FAFB;
       }
     </style>
   <script type="importmap">
