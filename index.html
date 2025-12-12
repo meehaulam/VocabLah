@@ -236,117 +236,118 @@
         animation: pulse 2s infinite;
       }
 
-      /* 2x2 Button Grid */
-      .difficulty-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-        padding: 0 20px 120px;
-        max-width: 500px;
-        margin: 0 auto;
+      /* 1x4 Difficulty Buttons Row */
+      .difficulty-buttons-row {
+        display: flex;
+        gap: 8px;
+        padding: 16px;
+        position: fixed;
+        bottom: 80px;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to top, var(--bg-main) 90%, transparent);
+        z-index: 40;
       }
 
-      .difficulty-btn {
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid transparent;
-        border-radius: 16px;
-        padding: 20px 16px;
+      html.dark .difficulty-buttons-row {
+        background: linear-gradient(to top, #1E1B29 90%, transparent);
+      }
+
+      .diff-btn {
+        flex: 1;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 8px;
+        gap: 4px;
+        padding: 12px 8px;
+        border-radius: 12px;
+        border: 2px solid;
         cursor: pointer;
         transition: all 0.2s;
-        min-height: 100px;
       }
 
-      .difficulty-btn:active {
+      .diff-btn:active {
         transform: scale(0.95);
       }
 
-      .btn-icon {
-        font-size: 32px;
+      .diff-icon {
+        font-size: 24px;
       }
 
-      .btn-label {
-        font-size: 16px;
+      .diff-label {
+        font-size: 13px;
         font-weight: 600;
       }
 
-      .btn-interval {
-        font-size: 13px;
+      .diff-time {
+        font-size: 11px;
         opacity: 0.8;
-        margin-top: 4px;
       }
 
       /* Button Colors - Light Mode */
       .btn-again {
-        background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
-        color: #991B1B;
-        border-color: #FCA5A5;
+        background: rgba(239, 68, 68, 0.15);
+        border-color: #EF4444;
+        color: #DC2626;
       }
 
       .btn-again:hover {
-        background: linear-gradient(135deg, #FCA5A5 0%, #FEE2E2 100%);
-        border-color: #EF4444;
+        background: rgba(239, 68, 68, 0.25);
       }
 
       .btn-hard {
-        background: linear-gradient(135deg, #FED7AA 0%, #FDBA74 100%);
-        color: #92400E;
-        border-color: #FB923C;
+        background: rgba(249, 115, 22, 0.15);
+        border-color: #F97316;
+        color: #EA580C;
       }
 
       .btn-hard:hover {
-        background: linear-gradient(135deg, #FB923C 0%, #FED7AA 100%);
-        border-color: #F97316;
+        background: rgba(249, 115, 22, 0.25);
       }
 
       .btn-good {
-        background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
-        color: #1E3A8A;
-        border-color: #60A5FA;
+        background: rgba(59, 130, 246, 0.15);
+        border-color: #3B82F6;
+        color: #2563EB;
       }
 
       .btn-good:hover {
-        background: linear-gradient(135deg, #60A5FA 0%, #DBEAFE 100%);
-        border-color: #3B82F6;
+        background: rgba(59, 130, 246, 0.25);
       }
 
       .btn-easy {
-        background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
-        color: #065F46;
-        border-color: #34D399;
+        background: rgba(16, 185, 129, 0.15);
+        border-color: #10B981;
+        color: #059669;
       }
 
       .btn-easy:hover {
-        background: linear-gradient(135deg, #34D399 0%, #D1FAE5 100%);
-        border-color: #10B981;
+        background: rgba(16, 185, 129, 0.25);
       }
 
       /* Dark Mode Button Adjustments */
       html.dark .btn-again {
         background: rgba(239, 68, 68, 0.2);
         color: #FCA5A5;
-        border-color: rgba(239, 68, 68, 0.4);
+        border-color: rgba(239, 68, 68, 0.5);
       }
 
       html.dark .btn-hard {
         background: rgba(249, 115, 22, 0.2);
         color: #FDBA74;
-        border-color: rgba(249, 115, 22, 0.4);
+        border-color: rgba(249, 115, 22, 0.5);
       }
 
       html.dark .btn-good {
         background: rgba(59, 130, 246, 0.2);
         color: #93C5FD;
-        border-color: rgba(59, 130, 246, 0.4);
+        border-color: rgba(59, 130, 246, 0.5);
       }
 
       html.dark .btn-easy {
         background: rgba(16, 185, 129, 0.2);
         color: #6EE7B7;
-        border-color: rgba(16, 185, 129, 0.4);
+        border-color: rgba(16, 185, 129, 0.5);
       }
 
       /* Feedback Overlay */
@@ -505,22 +506,26 @@
           font-size: 20px;
         }
 
-        .difficulty-grid {
-          gap: 10px;
-          padding-bottom: 140px;
+        .difficulty-buttons-row {
+          bottom: 70px;
+          padding: 12px;
+          gap: 6px;
         }
 
-        .difficulty-btn {
-          padding: 16px 12px;
-          min-height: 90px;
+        .diff-btn {
+          padding: 10px 6px;
         }
 
-        .btn-icon {
-          font-size: 28px;
+        .diff-icon {
+          font-size: 20px;
         }
 
-        .btn-label {
-          font-size: 14px;
+        .diff-label {
+          font-size: 11px;
+        }
+
+        .diff-time {
+          font-size: 10px;
         }
       }
 
