@@ -1,9 +1,42 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { VocabWord, Collection } from '../types';
 import { SessionLimitOption } from './SettingsView';
-import { ChevronLeft, RotateCw, PlayCircle, Check, Calendar, History, Brain, AlertCircle, X, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, RotateCw, PlayCircle, Check, Calendar, History, Brain, AlertCircle, X } from 'lucide-react';
 import { calculateSM2, getSRSIntervalPreview, Difficulty, isCardDue, getNextDueInfo, getSRSSettings, getDailyCounts, incrementDailyCounts } from '../utils/srs';
 import { getTodayDate, addDays } from '../utils/date';
+
+// Feedback type for rating animations
+type FeedbackType = 'again' | 'hard' | 'good' | 'easy' | null;
+
+// Animated Checkmark Component
+const GreenCheckmark: React.FC = () => (
+  <div className="checkmark-circle">
+    <svg className="checkmark-icon" viewBox="0 0 24 24">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  </div>
+);
+
+// Animated Star Component
+const GoldStar: React.FC = () => (
+  <div className="star-circle">
+    <span className="star-icon">⭐</span>
+  </div>
+);
+
+// Animated X Component
+const RedX: React.FC = () => (
+  <div className="redx-circle">
+    <span className="redx-icon">✕</span>
+  </div>
+);
+
+// Animated Warning Component
+const OrangeWarning: React.FC = () => (
+  <div className="warning-circle">
+    <span className="warning-icon">!</span>
+  </div>
+);
 
 interface ReviewModeProps {
   words: VocabWord[];
@@ -41,11 +74,14 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   const [newCardsStarted, setNewCardsStarted] = useState<Set<number>>(new Set()); // Track which *new* cards were actually started in this session
   
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [animatingId, setAnimatingId] = useState<number | null>(null);
   const [isBatchComplete, setIsBatchComplete] = useState(false);
 
   // Card Flip State
   const [isFlipped, setIsFlipped] = useState(false);
+
+  // Feedback Overlay State
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
 
   // Sync initialCollectionId if it changes
   useEffect(() => {
@@ -181,35 +217,43 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
   const handleRate = (difficulty: Difficulty) => {
     if (!currentWord) return;
 
+    // Show feedback overlay
+    setFeedbackType(difficulty);
+    setShowFeedback(true);
+
+    // Haptic feedback (mobile)
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
     const updatedWord = calculateSM2(currentWord, difficulty);
-    
+
     setSessionStats(prev => ({
       ...prev,
       [difficulty]: prev[difficulty] + 1
     }));
 
-    setSessionWords(prev => prev.map(w => 
+    setSessionWords(prev => prev.map(w =>
       w.id === updatedWord.id ? updatedWord : w
     ));
 
-    const isMastered = (difficulty === 'good' || difficulty === 'easy');
-    if (isMastered) {
-      setAnimatingId(currentWord.id);
-    }
-    
     if (!isPracticeMode) {
        onUpdateWord(updatedWord);
     }
 
+    // Wait for feedback animation, then advance
     setTimeout(() => {
-      setAnimatingId(null);
+      setShowFeedback(false);
+      setFeedbackType(null);
+      setIsFlipped(false);
+
       if (difficulty === 'again') {
          setCurrentBatchIds(prev => [...prev, currentWord.id]);
       } else {
          setCompletedIds(prev => new Set(prev).add(currentWord.id));
       }
       handleNext();
-    }, isMastered ? 600 : 200);
+    }, 800);
   };
 
   const getNextReviewsForecast = () => {
@@ -387,114 +431,106 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
 
   return (
     <>
-      <div className="h-full w-full bg-transparent relative overflow-hidden flex flex-col">
-        {/* Progress Bar */}
-        <div className="h-1.5 w-full bg-gray-200 dark:bg-gray-700/50 shrink-0">
-            <div 
-              className="h-full bg-primary transition-all duration-300 ease-out"
-              style={{ width: `${((currentIndex) / currentBatchIds.length) * 100}%` }}
-            />
+      <div className="review-container h-full w-full bg-transparent relative overflow-hidden flex flex-col">
+        {/* Session Progress Header */}
+        <div className="session-progress-header">
+          <span className="progress-text">Session Progress</span>
+          <span className="progress-count">{currentIndex + 1} / {currentBatchIds.length}</span>
+        </div>
+        <div className="progress-bar">
+          <div
+            className="progress-fill"
+            style={{ width: `${((currentIndex + 1) / currentBatchIds.length) * 100}%` }}
+          />
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 shrink-0">
+        {/* Header with close and collection name */}
+        <div className="flex items-center justify-between px-5 py-2 shrink-0">
             <button onClick={onBackToDashboard} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
               <X className="w-6 h-6" />
             </button>
             <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">
               {activeCollectionName}
             </div>
-            <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              {currentIndex + 1} / {currentBatchIds.length}
-            </div>
+            <div className="w-6"></div>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className="review-content flex-1 px-4">
-            <div className="flashcard-container perspective-1000">
-                <div 
-                  className={`flashcard relative w-full max-w-md aspect-[4/5] sm:aspect-[4/3] transition-all duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'flipped' : ''}`}
-                  onClick={() => setIsFlipped(!isFlipped)}
-                >
-                  <div className="flashcard-inner">
-                      {/* Front */}
-                      <div className="flashcard-front">
-                          <div className="text-xs font-bold text-white/60 uppercase tracking-wider mb-8">Word</div>
-                          <h2 className="text-3xl sm:text-4xl font-bold text-white break-words w-full">
-                            {currentWord.word}
-                          </h2>
-                          <div className="absolute bottom-8 text-sm text-white/60 animate-pulse">
-                            Tap to reveal
-                          </div>
-                      </div>
-
-                      {/* Back */}
-                      <div className="flashcard-back">
-                          <div className="text-xs font-bold text-white/60 uppercase tracking-wider mb-8">Meaning</div>
-                          <p className="text-xl sm:text-2xl font-medium text-white leading-relaxed break-words w-full">
-                            {currentWord.meaning}
-                          </p>
-                      </div>
-                  </div>
-                </div>
-                
-                {/* Animation Overlay */}
-                {animatingId === currentWord.id && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50 animate-out zoom-out duration-500">
-                      <CheckCircle2 className="w-32 h-32 text-green-500 drop-shadow-2xl" strokeWidth={3} />
-                  </div>
-                )}
-            </div>
+        {/* Flashcard Wrapper - Tappable Card */}
+        <div className="flashcard-wrapper flex-1">
+          <div
+            className="flashcard"
+            onClick={() => !isFlipped && setIsFlipped(true)}
+          >
+            {!isFlipped ? (
+              /* Front: Word */
+              <div className="card-front">
+                <div className="word-main">{currentWord.word}</div>
+                <div className="tap-hint">Tap to reveal →</div>
+              </div>
+            ) : (
+              /* Back: Meaning */
+              <div className="card-back">
+                <div className="word-main-small">{currentWord.word}</div>
+                <div className="divider"></div>
+                <div className="word-meaning">{currentWord.meaning}</div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* 2x2 Difficulty Buttons Grid */}
+        {isFlipped && (
+          <div className="difficulty-grid">
+            <button
+              className="difficulty-btn btn-again"
+              onClick={() => handleRate('again')}
+            >
+              <span className="btn-icon">❌</span>
+              <span className="btn-label">Again</span>
+              <span className="btn-interval">{intervals?.again}</span>
+            </button>
+
+            <button
+              className="difficulty-btn btn-hard"
+              onClick={() => handleRate('hard')}
+            >
+              <span className="btn-icon">😐</span>
+              <span className="btn-label">Hard</span>
+              <span className="btn-interval">{intervals?.hard}</span>
+            </button>
+
+            <button
+              className="difficulty-btn btn-good"
+              onClick={() => handleRate('good')}
+            >
+              <span className="btn-icon">✅</span>
+              <span className="btn-label">Good</span>
+              <span className="btn-interval">{intervals?.good}</span>
+            </button>
+
+            <button
+              className="difficulty-btn btn-easy"
+              onClick={() => handleRate('easy')}
+            >
+              <span className="btn-icon">💯</span>
+              <span className="btn-label">Easy</span>
+              <span className="btn-interval">{intervals?.easy}</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Fixed Controls at Bottom */}
-      <div className="difficulty-buttons-container safe-area-bottom">
-          {!isFlipped ? (
-             <div className="max-w-md mx-auto">
-                 <button
-                   onClick={() => setIsFlipped(true)}
-                   className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] text-lg"
-                 >
-                   Show Answer
-                 </button>
-             </div>
-          ) : (
-             <div className="difficulty-buttons-grid">
-                <button
-                  onClick={() => handleRate('again')}
-                  className="flex flex-col items-center justify-center py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors active:scale-95 group shadow-sm bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm"
-                >
-                   <span className="text-sm font-bold text-red-600 dark:text-red-400">Again</span>
-                   <span className="text-[10px] text-red-400/80 group-hover:text-red-500 mt-1">{intervals?.again}</span>
-                </button>
-                
-                <button
-                  onClick={() => handleRate('hard')}
-                  className="flex flex-col items-center justify-center py-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors active:scale-95 group shadow-sm bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm"
-                >
-                   <span className="text-sm font-bold text-orange-600 dark:text-orange-400">Hard</span>
-                   <span className="text-[10px] text-orange-400/80 group-hover:text-orange-500 mt-1">{intervals?.hard}</span>
-                </button>
-
-                <button
-                  onClick={() => handleRate('good')}
-                  className="flex flex-col items-center justify-center py-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors active:scale-95 group shadow-sm bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm"
-                >
-                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">Good</span>
-                   <span className="text-[10px] text-blue-400/80 group-hover:text-blue-500 mt-1">{intervals?.good}</span>
-                </button>
-
-                <button
-                  onClick={() => handleRate('easy')}
-                  className="flex flex-col items-center justify-center py-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors active:scale-95 group shadow-sm bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm"
-                >
-                   <span className="text-sm font-bold text-green-600 dark:text-green-400">Easy</span>
-                   <span className="text-[10px] text-green-400/80 group-hover:text-green-500 mt-1">{intervals?.easy}</span>
-                </button>
-             </div>
-          )}
-      </div>
+      {/* Checkmark Feedback Overlay */}
+      {showFeedback && (
+        <div className="feedback-overlay">
+          <div className="feedback-animation">
+            {feedbackType === 'good' && <GreenCheckmark />}
+            {feedbackType === 'easy' && <GoldStar />}
+            {feedbackType === 'again' && <RedX />}
+            {feedbackType === 'hard' && <OrangeWarning />}
+          </div>
+        </div>
+      )}
     </>
   );
 };
