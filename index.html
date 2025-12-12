@@ -142,8 +142,8 @@
       }
 
       .flashcard {
-        background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
-        border-radius: 24px;
+        background: linear-gradient(135deg, rgba(88, 86, 214, 0.95) 0%, rgba(68, 65, 179, 0.95) 100%);
+        border-radius: 20px;
         padding: 48px 32px;
         min-height: 300px;
         width: 100%;
@@ -154,7 +154,8 @@
         align-items: center;
         color: white;
         cursor: pointer;
-        box-shadow: 0 8px 32px rgba(168, 85, 247, 0.3);
+        box-shadow: 0 8px 24px rgba(88, 86, 214, 0.4);
+        backdrop-filter: blur(10px);
         transition: transform 0.2s;
         user-select: none;
       }
@@ -175,7 +176,7 @@
       }
 
       .word-main {
-        font-size: 48px;
+        font-size: 52px;
         font-weight: 700;
         margin-bottom: 16px;
         text-align: center;
@@ -183,7 +184,7 @@
       }
 
       .word-main-small {
-        font-size: 32px;
+        font-size: 36px;
         font-weight: 700;
         margin-bottom: 8px;
         text-align: center;
@@ -213,18 +214,18 @@
       }
 
       .word-meaning {
-        font-size: 24px;
+        font-size: 28px;
         font-weight: 600;
         margin-bottom: 12px;
         text-align: center;
-        color: #E9D5FF;
+        color: rgba(233, 213, 255, 0.95);
         word-break: break-word;
       }
 
       .word-definition {
-        font-size: 16px;
+        font-size: 15px;
         line-height: 1.6;
-        opacity: 0.9;
+        opacity: 0.85;
         text-align: center;
         max-width: 400px;
       }
@@ -495,15 +496,15 @@
         }
 
         .word-main {
-          font-size: 40px;
+          font-size: 44px;
         }
 
         .word-main-small {
-          font-size: 28px;
+          font-size: 32px;
         }
 
         .word-meaning {
-          font-size: 20px;
+          font-size: 24px;
         }
 
         .difficulty-buttons-row {
@@ -632,10 +633,11 @@
         visibility: hidden;
         opacity: 0;
         position: absolute;
-        bottom: 125%;
+        bottom: auto;
+        top: 125%;
         left: 50%;
         transform: translateX(-50%);
-        background: #9333EA;
+        background: #1F2937;
         color: white;
         padding: 10px 12px;
         border-radius: 8px;
@@ -643,22 +645,24 @@
         width: 200px;
         text-align: left;
         z-index: 1000;
-        box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         transition: opacity 0.3s;
         pointer-events: none;
         font-weight: normal;
         line-height: 1.4;
-        border: 1px solid #A855F7;
+        border: 1px solid #374151;
       }
 
       .tooltip-text::after {
         content: '';
         position: absolute;
-        top: 100%;
+        top: auto;
+        bottom: 100%;
         left: 50%;
         transform: translateX(-50%);
         border: 6px solid transparent;
-        border-top-color: #9333EA;
+        border-top-color: transparent;
+        border-bottom-color: #1F2937;
       }
 
       .tooltip-wrapper:hover .tooltip-text,
@@ -673,10 +677,63 @@
           height: 18px;
           font-size: 11px;
         }
-        
+
         .difficulty-buttons-container {
            bottom: 70px;
         }
+      }
+
+      /* Progress Ring Styles */
+      .progress-ring {
+        width: 160px;
+        height: 160px;
+      }
+
+      .progress-ring-bg {
+        stroke: rgba(168, 85, 247, 0.15);
+        stroke-width: 12;
+        fill: none;
+      }
+
+      .progress-ring-circle {
+        stroke: #A855F7;
+        stroke-width: 12;
+        fill: none;
+        filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.5s ease;
+      }
+
+      .progress-percentage {
+        font-size: 42px;
+        font-weight: 700;
+        fill: #1F2937;
+      }
+
+      .progress-label {
+        font-size: 14px;
+        font-weight: 600;
+        fill: #6B7280;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      /* Dark mode progress ring */
+      html.dark .progress-ring-bg {
+        stroke: rgba(192, 132, 252, 0.2);
+      }
+
+      html.dark .progress-ring-circle {
+        stroke: #C084FC;
+        filter: drop-shadow(0 0 12px rgba(192, 132, 252, 0.6));
+      }
+
+      html.dark .progress-percentage {
+        fill: #F9FAFB;
+      }
+
+      html.dark .progress-label {
+        fill: #D1D5DB;
       }
     </style>
   <script type="importmap">
