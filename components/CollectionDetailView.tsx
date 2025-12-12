@@ -199,20 +199,34 @@ export const CollectionDetailView: React.FC<CollectionDetailViewProps> = ({
           {stats.due > 0 && (
             <button
               onClick={onReview}
-              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-3 text-white font-bold py-4 px-6 rounded-xl transition-all active:scale-[0.98] shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, #A855F7 0%, #9333EA 100%)',
+                boxShadow: '0 4px 16px rgba(168, 85, 247, 0.4)',
+                fontSize: '18px'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(168, 85, 247, 0.5)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = '';
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(168, 85, 247, 0.4)';
+              }}
             >
-              <PlayCircle className="w-5 h-5 fill-current" />
+              <span style={{ fontSize: '20px' }}>▶️</span>
               Review {collection.name} ({stats.due} due)
             </button>
           )}
 
           <button
             onClick={() => onAddWord(collection.id === 'all' ? null : collection.id)}
-            className={`w-full flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-xl border-2 transition-all active:scale-[0.98] ${
-               stats.due > 0 
-               ? 'bg-transparent border-gray-200 dark:border-dark-border text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-surface'
-               : 'bg-primary hover:bg-primary-hover border-transparent text-white shadow-lg shadow-blue-500/20'
+            className={`w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl border-2 transition-all active:scale-[0.98] ${
+               stats.due > 0
+               ? 'bg-transparent border-primary text-primary hover:bg-purple-50 dark:hover:bg-purple-900/10 font-semibold'
+               : 'bg-primary hover:bg-primary-hover border-transparent text-white shadow-lg shadow-blue-500/20 font-bold'
             }`}
+            style={stats.due > 0 ? { fontSize: '16px' } : { fontSize: '18px' }}
           >
             <Plus className="w-5 h-5" />
             Add Word to {collection.name}

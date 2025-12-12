@@ -114,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const bannerMessage = `You have ${dueCount} cards due today. ${motivationalMessage}`;
 
   return (
-    <div className="flex flex-col h-full gap-6 p-1 animate-in fade-in duration-500">
+    <div className="dashboard-container flex flex-col h-full gap-6 p-1 pb-36 animate-in fade-in duration-500">
       
       {/* Reminder Banner */}
       {isBannerVisible && (
@@ -173,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                )}
              </div>
            ) : (
-             <div className="space-y-1">
+             <div className="no-cards-message space-y-1 mb-8">
                <h2 className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-500 flex items-center gap-2 justify-center">
                   <span>No cards due!</span>
                   <span className="text-2xl">🎉</span>
@@ -253,12 +253,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex items-center gap-1.5" title="Cards in learning phase">
                <span className="w-2 h-2 rounded-full bg-orange-400"></span>
                <span>{learningCount} learning</span>
-               <Tooltip content="Cards you're still memorizing. Reviewed more frequently." />
             </div>
             <div className="flex items-center gap-1.5" title="Mature cards (interval > 21 days)">
                <span className="w-2 h-2 rounded-full bg-green-500"></span>
                <span>{matureCount} mature</span>
-               <Tooltip content="Cards in long-term memory. Reviewed less often (21+ days interval)." />
             </div>
           </div>
         </div>
@@ -266,19 +264,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* 3. Forecast Section (New) */}
       {(dueTomorrow > 0 || dueThisWeek > 0) && dueCount === 0 && (
-        <div className="upcoming-section bg-gray-50 dark:bg-dark-surface rounded-xl p-4 border border-gray-100 dark:border-dark-border animate-in slide-in-from-bottom-2 mb-16">
-           <div className="flex items-center gap-2 mb-3 text-sm font-bold text-gray-700 dark:text-dark-text uppercase tracking-wide">
+        <div className="upcoming-section bg-gray-50 dark:bg-dark-surface rounded-xl p-5 border border-gray-100 dark:border-dark-border animate-in slide-in-from-bottom-2 mt-8">
+           <div className="upcoming-header flex items-center gap-2 mb-4 text-sm font-bold text-gray-700 dark:text-dark-text uppercase tracking-wide">
               <CalendarClock className="w-4 h-4 text-primary" />
-              <span>Upcoming</span>
+              <span>Upcoming Reviews</span>
            </div>
-           <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                 <span className="text-2xl font-bold text-dark dark:text-dark-text">{dueTomorrow}</span>
-                 <span className="text-xs text-gray-500 dark:text-dark-text-sec">Due Tomorrow</span>
+           <div className="upcoming-cards grid grid-cols-2 gap-4">
+              <div className="upcoming-card bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl p-5 text-center">
+                 <div className="upcoming-number text-3xl font-bold text-primary mb-2">{dueTomorrow}</div>
+                 <div className="upcoming-label text-xs text-gray-500 dark:text-dark-text-sec font-medium">Due Tomorrow</div>
               </div>
-              <div className="flex flex-col">
-                 <span className="text-2xl font-bold text-dark dark:text-dark-text">{dueThisWeek}</span>
-                 <span className="text-xs text-gray-500 dark:text-dark-text-sec">Due This Week</span>
+              <div className="upcoming-card bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-xl p-5 text-center">
+                 <div className="upcoming-number text-3xl font-bold text-primary mb-2">{dueThisWeek}</div>
+                 <div className="upcoming-label text-xs text-gray-500 dark:text-dark-text-sec font-medium">Due This Week</div>
               </div>
            </div>
         </div>

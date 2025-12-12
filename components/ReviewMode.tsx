@@ -419,19 +419,19 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({
                   <div className="flashcard-inner">
                       {/* Front */}
                       <div className="flashcard-front">
-                          <div className="text-xs font-bold text-white/60 uppercase tracking-wider mb-8">Word</div>
-                          <h2 className="text-3xl sm:text-4xl font-bold text-white break-words w-full">
+                          <div className="flashcard-label">Word</div>
+                          <h2 className="flashcard-word">
                             {currentWord.word}
                           </h2>
-                          <div className="absolute bottom-8 text-sm text-white/60 animate-pulse">
+                          <div className="tap-hint">
                             Tap to reveal
                           </div>
                       </div>
 
                       {/* Back */}
                       <div className="flashcard-back">
-                          <div className="text-xs font-bold text-white/60 uppercase tracking-wider mb-8">Meaning</div>
-                          <p className="text-xl sm:text-2xl font-medium text-white leading-relaxed break-words w-full">
+                          <div className="flashcard-label">Meaning</div>
+                          <p className="flashcard-meaning">
                             {currentWord.meaning}
                           </p>
                       </div>

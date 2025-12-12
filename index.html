@@ -146,6 +146,70 @@
         background: linear-gradient(135deg, #7C3AED 0%, #6B21A8 100%);
       }
 
+      /* Flashcard Text Styles - Responsive */
+      .flashcard-label {
+        font-size: 13px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        opacity: 0.9;
+        color: white;
+      }
+
+      .flashcard-word {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 24px;
+        color: white;
+        break-word: break-word;
+        width: 100%;
+      }
+
+      .flashcard-meaning {
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.4;
+        opacity: 0.95;
+        color: white;
+        break-word: break-word;
+        width: 100%;
+        leading-relaxed: true;
+      }
+
+      .tap-hint {
+        font-size: 14px;
+        margin-top: 24px;
+        opacity: 0.8;
+        color: white;
+        position: absolute;
+        bottom: 32px;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      /* Tablet Flashcard Fonts */
+      @media (min-width: 768px) and (max-width: 1024px) {
+        .flashcard-word {
+          font-size: 42px;
+        }
+
+        .flashcard-meaning {
+          font-size: 24px;
+        }
+      }
+
+      /* Desktop Flashcard Fonts */
+      @media (min-width: 1025px) {
+        .flashcard-word {
+          font-size: 48px;
+        }
+
+        .flashcard-meaning {
+          font-size: 28px;
+        }
+      }
+
       /* Review Screen Styles */
       .difficulty-buttons-container {
         position: fixed;
@@ -254,6 +318,123 @@
       .demo-back {
         transform: rotateY(180deg);
       }
+
+      /* Tutorial Overlay Styles */
+      .tutorial-step {
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh;
+        overflow: hidden;
+      }
+
+      .tutorial-header {
+        flex-shrink: 0;
+        padding: 24px 20px 16px;
+        text-align: center;
+      }
+
+      .tutorial-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+      }
+
+      .tutorial-body {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 0 20px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
+      }
+
+      .tutorial-body::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .tutorial-body::-webkit-scrollbar-thumb {
+        background: rgba(168, 85, 247, 0.3);
+        border-radius: 2px;
+      }
+
+      .tutorial-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .tutorial-footer {
+        flex-shrink: 0;
+        padding: 16px 20px 20px;
+        text-align: center;
+      }
+
+      .tutorial-timeline,
+      .tutorial-example,
+      .tutorial-highlight {
+        font-size: 14px;
+        padding: 12px;
+        margin: 12px 0;
+      }
+
+      .tutorial-progress {
+        position: sticky;
+        bottom: 16px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 16px auto 16px;
+        width: fit-content;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      html.dark .tutorial-progress {
+        background: rgba(45, 36, 56, 0.95);
+      }
+
+      /* Mobile Tutorial Optimization */
+      @media (max-width: 767px) {
+        .tutorial-step {
+          max-height: 90vh;
+        }
+
+        .tutorial-icon {
+          font-size: 48px;
+          margin-bottom: 12px;
+        }
+
+        .tutorial-step h2 {
+          font-size: 22px;
+          margin-bottom: 12px;
+        }
+
+        .tutorial-step p {
+          font-size: 15px;
+          line-height: 1.5;
+          margin-bottom: 16px;
+        }
+
+        .tutorial-timeline,
+        .tutorial-example,
+        .tutorial-highlight {
+          font-size: 14px;
+          padding: 12px;
+          margin: 12px 0;
+        }
+
+        .tutorial-header {
+          padding: 20px 16px 12px;
+        }
+
+        .tutorial-body {
+          padding: 0 16px;
+        }
+
+        .tutorial-footer {
+          padding: 12px 16px 16px;
+        }
+      }
       
       /* Tooltip Styles */
       .tooltip-wrapper {
@@ -323,15 +504,74 @@
         opacity: 1;
       }
 
+      /* Dashboard Styles */
+      .dashboard-container {
+        padding-bottom: 140px;
+      }
+
+      .no-cards-message {
+        text-align: center;
+        padding: 40px 20px;
+        margin-bottom: 32px;
+      }
+
+      .upcoming-section {
+        margin-top: 32px;
+        padding-top: 24px;
+      }
+
+      .upcoming-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .upcoming-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .upcoming-card {
+        background: var(--bg-card);
+        border-radius: 12px;
+        padding: 20px 16px;
+        text-align: center;
+      }
+
+      .upcoming-number {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .upcoming-label {
+        font-size: 13px;
+        font-weight: 500;
+      }
+
       @media (max-width: 640px) {
         .tooltip-icon {
           width: 18px;
           height: 18px;
           font-size: 11px;
         }
-        
+
         .difficulty-buttons-container {
            bottom: 70px;
+        }
+
+        .upcoming-cards {
+          gap: 12px;
+        }
+
+        .upcoming-card {
+          padding: 16px 12px;
+        }
+
+        .upcoming-number {
+          font-size: 28px;
         }
       }
     </style>
